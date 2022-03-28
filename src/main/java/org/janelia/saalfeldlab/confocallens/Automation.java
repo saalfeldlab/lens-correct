@@ -1201,7 +1201,7 @@ public class Automation {
 				AffineModel2D affine = (AffineModel2D) cts.get(1);
 				affine.preConcatenate(affineModel);
 				ArrayList<String> templist = new ArrayList<String>();
-				String label = String.format(format, scope, sample, lambdas[i]);
+				String label = String.format("%s, %s", sample, lambdas[i]);
 				String classname1 = ctl.get(0).getClass().getName();
 				String ctstr1 = ctl.get(0).toDataString();
 				String classname2 = ctl.get(1).getClass().getName();
