@@ -18,6 +18,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,8 +31,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FileUtils;
+import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.JSONStringer;
 
 import ij.ImageJ;
 import ij.ImagePlus;
@@ -77,6 +79,7 @@ import java.awt.image.IndexColorModel;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 
 public class Automation {
 
@@ -253,7 +256,7 @@ public class Automation {
 			(w + xSkip) * transforms.length - xSkip,
 			(h + ySkip) * transforms.length - ySkip);
 		ImagePlus impTable = new ImagePlus("Matrix", table);
-		impTable.show();
+		//impTable.show();
 		
 		for (int i = 0; i < transforms.length; ++i) {
 			CoordinateTransformList<mpicbg.models.CoordinateTransform> ct1 = createTransformList(i, transforms);
@@ -286,7 +289,7 @@ public class Automation {
 			(w + xSkip) * transforms.length - xSkip,
 			(h + ySkip) * transforms.length - ySkip);
 		ImagePlus impTable = new ImagePlus("Matrix", table);
-		impTable.show();
+		//impTable.show();
 		
 		
 		for (int i = 0; i < transforms.length; ++i) {
@@ -895,6 +898,13 @@ public class Automation {
 //					false//visualize
 //			);
 			
+			JSONObject input_pattern_jo = jo.getJSONObject("input");
+			JSONArray input_patterns_ja = input_pattern_jo.getJSONArray("patterns");
+			List<String> input_patterns = new ArrayList<String>();
+			for (int i = 0; i < input_patterns_ja.length(); i++) {
+				input_patterns.add(input_patterns_ja.getString(i));
+			}
+			
 			String[] extensions = {"lsm", "LSM"};
 			
 			//new ImageJ();
@@ -903,82 +913,47 @@ public class Automation {
 			List<String> flist = findFiles(Paths.get(dir_path), extensions);		
 			flist.sort(Comparator.naturalOrder());
 			
-			List<ImagePlus> mips = new ArrayList<ImagePlus>();
+			HashMap<String, List<ImagePlus>> map_mips = new HashMap<String, List<ImagePlus>>();
 			for (int i = 0; i < flist.size(); i++) 
 			{
-				String path = flist.get(i);
-				final ImagePlus[] impStack = BF.openImagePlus(path);
-
-				System.out.println(
-						"Number of images: " + impStack.length + " (this should always be 1), we ignore others");
-
-				if (impStack.length > 1)
-					throw new RuntimeException("More than one image was opened, please check the input carefully.");
-
-				final ImagePlus imp = impStack[0];
-
-				System.out.println("dimensions: " + imp.getStack().getProcessor(1).getWidth() + "x"
-						+ imp.getStack().getProcessor(1).getHeight() + ", channels: " + imp.getNChannels()
-						+ ", z-slices:" + imp.getNSlices() + ", timepoints: " + imp.getNFrames());
-
-				imp.resetDisplayRange();
-				
-				ImagePlus mip_imp = ZMaxProjection(imp);
-				HyperStackConverter.toStack(mip_imp);
-				//ImagePlus mip_imp = ZProjector.run(imp, "max");
-				//mip_imp.show();
-				
-				String fname = Paths.get(path).getFileName().toString();
-				String prev_fname = "";
-				if (i > 0)
-					prev_fname = Paths.get(flist.get(i-1)).getFileName().toString();	
-				
-				if (i > 0 && fname.charAt(0) == prev_fname.charAt(0))
+				for (String pattern : input_patterns)
 				{
-					ImagePlus prev_mip = mips.get(mips.size()-1);
-					ImageStack dst_stack = prev_mip.getStack();
-					ImageStack src_stack = mip_imp.getStack();
-					for (int j = 1; j <= src_stack.getSize(); j++)
-						dst_stack.addSlice(src_stack.getProcessor(j).duplicate());
-					prev_mip.setStack(dst_stack);
-					mip_imp.close();
+					Pattern pt = Pattern.compile(pattern);
+				    Matcher mt = pt.matcher(flist.get(i));
+				    if (mt.find())
+				    {
+				    	String path = flist.get(i);
+						final ImagePlus[] impStack = BF.openImagePlus(path);
+
+						System.out.println(
+								"Number of images: " + impStack.length + " (this should always be 1), we ignore others");
+
+						if (impStack.length > 1)
+							throw new RuntimeException("More than one image was opened, please check the input carefully.");
+
+						final ImagePlus imp = impStack[0];
+
+						System.out.println("dimensions: " + imp.getStack().getProcessor(1).getWidth() + "x"
+								+ imp.getStack().getProcessor(1).getHeight() + ", channels: " + imp.getNChannels()
+								+ ", z-slices:" + imp.getNSlices() + ", timepoints: " + imp.getNFrames());
+
+						imp.resetDisplayRange();
+						
+						ImagePlus mip_imp = ZMaxProjection(imp);
+						HyperStackConverter.toStack(mip_imp);
+						
+						if (!map_mips.containsKey(pattern))
+							map_mips.put(pattern, new ArrayList<ImagePlus>());
+						map_mips.get(pattern).add(mip_imp);
+						
+						imp.close();
+						break;
+				    }
 				}
-				else
-				{
-					mips.add(mip_imp);
-				}
-				
-				imp.close();
 			}
 			
-			if (mips.size() == 0)
+			if (map_mips.size() == 0)
 				throw new RuntimeException("mip creation failed.");
-			
-			int layernum = mips.get(0).getNSlices();
-			int w = mips.get(0).getWidth();
-			int h = mips.get(0).getHeight();
-			List<ImageStack> layer_stacks = new ArrayList<ImageStack>();
-			for (int i = 0; i < layernum; i++) 
-				layer_stacks.add(new ImageStack(w, h));
-			
-			for (int i = 0; i < mips.size(); i++) 
-			{
-				ImagePlus mip = mips.get(i);
-				ImageStack sstack = mip.getStack();
-				for(int j = 0; j < layernum; j++)
-				{
-					layer_stacks.get(j).addSlice(sstack.getProcessor(j+1).duplicate());
-				}
-				mip.close();
-			}
-			
-			List<ImagePlus> layers = new ArrayList<ImagePlus>();
-			for (int i = 0; i < layernum; i++) 
-			{
-				ImagePlus layer_imp = new ImagePlus("layer"+i, layer_stacks.get(i));
-				layers.add(layer_imp);
-			}
-			
 			
 			//save mip images
 			//normalize local contrast brx 127 bry 127 stds 3.0 (all layers)
@@ -988,27 +963,46 @@ public class Automation {
 			int brx = 127;
 			int bry = 127;
 			float stds = 3.0f;
-			ArrayList<ArrayList<String>> layer_patch_paths = new ArrayList<ArrayList<String>>();
-			for (int layer_id = 0; layer_id < layernum; layer_id++) 
-			{
-				ImagePlus layer = layers.get(layer_id);
-				//layer.show();
-				ImageStack sstack = layer.getStack();
-				ArrayList<String> path_list = new ArrayList<String>();
-				for (int i = 1; i <= sstack.getSize(); i++)
+			int layernum = 0;
+			HashMap<Integer, ArrayList<String>> layer_patch_paths = new HashMap<Integer, ArrayList<String>>();
+			for (final List<ImagePlus> implist : map_mips.values()) {
+				int max_ch_num = 0;
+				for (int i = 0; i < implist.size(); i++) 
 				{
-					NormalizeLocalContrast.run(sstack.getProcessor(i), brx, bry, stds, true, true);
-					String fname = String.format("layer_%02d_pos_%02d.tif", layer_id, i);
-					ImagePlus tmp = new ImagePlus(fname, sstack.getProcessor(i).duplicate());
-					FileSaver saver = new FileSaver(tmp);
-					String fpath = strage_dir + File.separator + fname;
-					saver.saveAsTiff(fpath);
-					path_list.add(fpath);
+					ImagePlus mip = implist.get(i);
+					int layer_id = layernum;
+					ImageStack sstack = mip.getStack();
+					for (int s = 1; s <= sstack.getSize(); s++)
+					{
+						NormalizeLocalContrast.run(sstack.getProcessor(s), brx, bry, stds, true, true);
+						String fname = String.format("layer_%02d_pos_%02d.tif", layer_id, i);
+						ImagePlus tmp = new ImagePlus(fname, sstack.getProcessor(s).duplicate());
+						FileSaver saver = new FileSaver(tmp);
+						String fpath = strage_dir + File.separator + fname;
+						saver.saveAsTiff(fpath);
+						if (!layer_patch_paths.containsKey(layer_id))
+							layer_patch_paths.put(layer_id, new ArrayList<String>());
+						layer_patch_paths.get(layer_id).add(fpath);
+						tmp.close();
+						layer_id++;
+					}
+					if (layer_id > max_ch_num)
+						max_ch_num = layer_id;
 				}
-				layer.updateAndDraw();
-				layer_patch_paths.add(path_list);
+				layernum = max_ch_num;
 			}
 			
+			for (String pattern : input_patterns)
+				System.out.println(pattern);
+			System.out.println(layernum);
+			for (int i = 0; i < layernum; i++)
+			{
+				ArrayList<String> path_list = layer_patch_paths.get(i);
+				for (int s = 0; s < path_list.size(); s++)
+				{
+					System.out.println(path_list.get(s));
+				}
+			}		
 			
 			//create a new trakem project.
 			ControlWindow.setGUIEnabled(false);
@@ -1262,7 +1256,6 @@ public class Automation {
 			String compare_path = outdir + File.separator + pname + "_compare_lenses" + ".tif";
 			saver.saveAsTiff(compare_path);
 			
-
 			System.out.println("Done");
 			System.exit(0);
 			

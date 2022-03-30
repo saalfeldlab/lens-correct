@@ -1,4 +1,10 @@
 {
+    "input" : {
+        "patterns" : [
+            "AF488_?AF594",
+            "AF488_?cy3_?AF647"
+        ]
+    },
     "montageLayers" : {
         "initialSigma" : 1.6,
         "steps" : 3,
@@ -25,8 +31,8 @@
         "SIFTfdBins" : 8,
         "SIFTfdSize" : 4,
         "SIFTinitialSigma" : 1.6,
-        "SIFTmaxOctaveSize" : 900,
-        "SIFTminOctaveSize" : 1200,
+        "SIFTminOctaveSize" : 900,
+        "SIFTmaxOctaveSize" : 1200,
         "SIFTsteps" : 3,
         "clearCache" : true,
         "rod" : 0.92,
@@ -79,8 +85,8 @@
         "SIFTfdBins" : 8,
         "SIFTfdSize" : 4,
         "SIFTinitialSigma" : 1.6,
-        "SIFTmaxOctaveSize" : 1200,
         "SIFTminOctaveSize" : 900,
+        "SIFTmaxOctaveSize" : 1200,
         "SIFTsteps" : 3,
         "clearCache" : true,
         "rod" : 0.92,
@@ -105,8 +111,8 @@
         "SIFTfdBins" : 8,
         "SIFTfdSize" : 4,
         "SIFTinitialSigma" : 1.6,
-        "SIFTmaxOctaveSize" : 1200,
         "SIFTminOctaveSize" : 900,
+        "SIFTmaxOctaveSize" : 1200,
         "SIFTsteps" : 3,
         "clearCache" : true,
         "rod" : 0.92,
