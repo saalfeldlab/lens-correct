@@ -144,7 +144,7 @@ public class ConfocalLens {
 	}
 
 	@SuppressWarnings("unchecked")
-	final static public <T extends NumericType<T> & NativeType<T>> FloatProcessor createThickSlice(
+	final static public <T extends NumericType<T> & NativeType<T>, R extends RealType<R>> FloatProcessor createThickSlice(
 			final RandomAccessibleInterval<T> src,
 			final int z,
 			final int radius) {
@@ -152,10 +152,10 @@ public class ConfocalLens {
 		final RandomAccessibleInterval<? extends RealType<?>> realSrc;
 		final T t = src.randomAccess().get();
 		if (RealType.class.isInstance(t)) {
-			realSrc = (RandomAccessibleInterval<RealType<?>>)src;
+			realSrc = (RandomAccessibleInterval<R>)src;
 		} else if (ARGBType.class.isInstance(t)) {
 			realSrc = Converters.convert(
-					(RandomAccessibleInterval<ARGBType>)src,
+					(RandomAccessibleInterval)src,
 					new Converter<ARGBType, DoubleType>(){
 
 						@Override
