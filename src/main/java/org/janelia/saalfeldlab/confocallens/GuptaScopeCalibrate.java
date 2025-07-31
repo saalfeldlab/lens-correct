@@ -1173,10 +1173,10 @@ public class GuptaScopeCalibrate {
 			for (final Patch patch : patches)
 				matches.addAll(samplePoints(patch));
 
-			final RigidModel2D model = new RigidModel2D();
-			model.fit(matches);
-			final AffineModel2D affineModel = new AffineModel2D();
-			affineModel.set(model.createAffine());
+			// final RigidModel2D model = new RigidModel2D();
+			// model.fit(matches);
+			// final AffineModel2D affineModel = new AffineModel2D();
+			// affineModel.set(model.createAffine());
 
 			final ArrayList<HashMap<String, Object>> transformExports = new ArrayList<HashMap<String, Object>>();
 			for (int i = 0; i < patches.size(); ++i) {
@@ -1184,8 +1184,8 @@ public class GuptaScopeCalibrate {
 				@SuppressWarnings("unchecked")
 				final CoordinateTransformList< CoordinateTransform > ctl = (CoordinateTransformList< CoordinateTransform >) patch.getFullCoordinateTransform();
 				final List<CoordinateTransform> cts = ctl.getList(null);
-				final AffineModel2D affine = (AffineModel2D) cts.get(1);
-				affine.preConcatenate(affineModel);
+				// final AffineModel2D affine = (AffineModel2D) cts.get(1);
+				// affine.preConcatenate(affineModel);
 				final List<HashMap<String, String>> maplist = new ArrayList<HashMap<String, String>>();
 				maplist.add(exportTransform(ctl.get(0)));
 				maplist.add(exportTransform(ctl.get(1)));
@@ -1212,7 +1212,7 @@ public class GuptaScopeCalibrate {
 				final CoordinateTransformList< CoordinateTransform > ctl = (CoordinateTransformList< CoordinateTransform >) patch.getFullCoordinateTransform();
 				final List<CoordinateTransform> cts = ctl.getList(null);
 				final AffineModel2D affine = (AffineModel2D) cts.get(1);
-				affine.preConcatenate(affineModel);
+				// affine.preConcatenate(affineModel);
 				final ArrayList<String> templist = new ArrayList<String>();
 				final String label = String.format("%s, %s", sample, input_titles.get(i));
 				final String classname1 = ctl.get(0).getClass().getName();

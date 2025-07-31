@@ -1,4 +1,4 @@
-package org;
+package org.janelia.saalfeldlab.confocallens;
 
 import java.lang.reflect.Type;
 

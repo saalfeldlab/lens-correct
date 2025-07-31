@@ -28,6 +28,9 @@
 		<license.licenseName>gpl_v3</license.licenseName>
 		<license.copyrightOwners>Stephan Saalfeld and Takashi Kawasw.</license.copyrightOwners>
 
+		<!-- Java version -->
+		<!-- <maven.compiler.release>17</maven.compiler.release> -->
+
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
 

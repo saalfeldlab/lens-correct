@@ -17,22 +17,16 @@
 package org.janelia.saalfeldlab.confocallens;
 
 import java.awt.Rectangle;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.TransformationAdapter;
 import org.imagearchive.lsm.reader.Reader;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
 import ij.IJ;
@@ -41,13 +35,12 @@ import ij.ImageStack;
 import ij.io.Opener;
 import ij.process.Blitter;
 import ij.process.ImageProcessor;
-import mpicbg.ij.Mapping;
+import mpicbg.models.CoordinateTransformMesh;
 import mpicbg.trakem2.transform.CoordinateTransform;
 import mpicbg.trakem2.transform.CoordinateTransformList;
 import mpicbg.trakem2.transform.TransformMesh;
 import mpicbg.trakem2.transform.TransformMeshMappingWithMasks;
 import mpicbg.trakem2.transform.TranslationModel2D;
-import net.imglib2.realtransform.Translation2D;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
@@ -71,9 +64,11 @@ public class GuptaScopeApply implements Callable<Integer> {
 	@Option(names = {"-r", "--numTriangles" }, required = false, description = "number of triangles per image width, e.g. 128")
 	private int meshResolution = 128;
 
-	static public record Calibration(
-		CoordinateTransform[] transform,
-		String name) {}
+	static public class Calibration {
+
+		public CoordinateTransform[] transform;
+		public String name;
+	}
 
 	private static final Gson gson = new GsonBuilder()
 			.setPrettyPrinting()
@@ -213,8 +208,12 @@ public class GuptaScopeApply implements Callable<Integer> {
 			}
 
 			/* Calculate the intersection of the bounding boxes of all transformations */
-			int width = imp.getWidth();
-			int height = imp.getHeight();
+			final int width = imp.getWidth();
+			final int height = imp.getHeight();
+			final int nChannels = imp.getNChannels();
+			final int nSlices = imp.getNSlices();
+			final int nFrames = imp.getNFrames();
+			final int stackSize = imp.getStackSize();
 			Rectangle bounds = null;
 			for (final CoordinateTransform t : transforms) {
 				final TransformMesh mesh = new TransformMesh(t, meshResolution, width, height);
@@ -236,24 +235,26 @@ public class GuptaScopeApply implements Callable<Integer> {
 			TranslationModel2D offset = new TranslationModel2D();
 			offset.set(-x, -y);
 
-			final ArrayList<TransformMeshMappingWithMasks<TransformMesh>> mappings = new ArrayList<>();
+			final ArrayList<TransformMeshMappingWithMasks<CoordinateTransformMesh>> mappings = new ArrayList<>();
 			for (final CoordinateTransformList<CoordinateTransform> t : transforms) {
 				t.add(offset);
-				mappings.add(new TransformMeshMappingWithMasks<>(new TransformMesh(t, meshResolution, w, h)));
+				mappings.add(new TransformMeshMappingWithMasks<>(new CoordinateTransformMesh(t, meshResolution, imp.getWidth(), imp.getHeight())));
 			}
 
 			/* Render and save the transformed slices */
 			ImageStack targetStack = new ImageStack(w, h);
-			for (int i = 1; i <= imp.getStackSize(); ++i) {
+			for (int i = 1; i <= stackSize; ++i) {
 				final ImageProcessor ip = imp.getStack().getProcessor(i);
 				ip.setInterpolationMethod(ImageProcessor.BILINEAR);
-				for (TransformMeshMappingWithMasks<TransformMesh> m : mappings) {
+				for (TransformMeshMappingWithMasks<CoordinateTransformMesh> m : mappings) {
 					final ImageProcessor dst = ip.createProcessor(w, h);
 					m.mapInterpolated(ip, dst);
 					targetStack.addSlice(dst);
 				}
 			}
 			imp.setStack(targetStack);
+			imp.setDimensions(nChannels * transforms.size(), nSlices, nFrames);
+			imp.setDisplayMode(IJ.GRAYSCALE);
 			IJ.save(imp, outputPath);
 
         } catch (final IOException e) {
