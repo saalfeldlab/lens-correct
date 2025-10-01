@@ -68,7 +68,6 @@ import mpicbg.models.Model;
 import mpicbg.models.NotEnoughDataPointsException;
 import mpicbg.models.Point;
 import mpicbg.models.PointMatch;
-import mpicbg.models.RigidModel2D;
 import mpicbg.trakem2.align.Align;
 import mpicbg.trakem2.align.AlignTask;
 import mpicbg.trakem2.align.RegularizedAffineLayerAlignment;
