@@ -1,0 +1,120 @@
+FROM ubuntu:24.04
+
+ARG TZ
+ENV TZ="$TZ"
+
+ARG CLAUDE_CODE_VERSION=latest
+
+# Avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install basic tools and dependencies first
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  gnupg \
+  lsb-release \
+  sudo \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Add NodeSource repository for Node.js 20
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+
+# Install Node.js and all development tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  nodejs \
+  less \
+  git \
+  procps \
+  fzf \
+  zsh \
+  man-db \
+  unzip \
+  gh \
+  iptables \
+  ipset \
+  iproute2 \
+  dnsutils \
+  aggregate \
+  jq \
+  nano \
+  vim \
+  python3 \
+  python3-dev \
+  python3-pip \
+  python3-venv \
+  default-jdk \
+  maven \
+  wget \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create carol user with UID 1000
+RUN groupadd --gid 1000 carol && \
+  useradd --uid 1000 --gid carol --shell /bin/bash --create-home carol && \
+  usermod -aG sudo carol && \
+  echo "carol ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Ensure carol user has access to /usr/local/share
+RUN mkdir -p /usr/local/share/npm-global && \
+  chown -R carol:carol /usr/local/share
+
+ARG USERNAME=carol
+
+# Persist bash history
+RUN SNIPPET="export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
+  && mkdir /commandhistory \
+  && touch /commandhistory/.bash_history \
+  && chown -R $USERNAME /commandhistory
+
+# Set `DEVCONTAINER` environment variable to help with orientation
+ENV DEVCONTAINER=true
+
+# Create workspace and config directories and set permissions
+RUN mkdir -p /workspace /home/carol/.claude && \
+  chown -R carol:carol /workspace /home/carol/.claude
+
+WORKDIR /workspace
+
+ARG GIT_DELTA_VERSION=0.18.2
+RUN ARCH=$(dpkg --print-architecture) && \
+  wget "https://github.com/dandavison/delta/releases/download/${GIT_DELTA_VERSION}/git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
+  dpkg -i "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb" && \
+  rm "git-delta_${GIT_DELTA_VERSION}_${ARCH}.deb"
+
+# Python - Ubuntu 24.04 already uses python3 as default, but let's ensure the symlink exists
+RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+# Set up non-root user
+USER carol
+
+# Install global packages
+ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
+ENV PATH=$PATH:/usr/local/share/npm-global/bin
+
+# Set the default shell to zsh rather than sh
+ENV SHELL=/bin/zsh
+
+# Set the default editor and visual
+ENV EDITOR nano
+ENV VISUAL nano
+
+# Default powerline10k theme
+ARG ZSH_IN_DOCKER_VERSION=1.2.0
+RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v${ZSH_IN_DOCKER_VERSION}/zsh-in-docker.sh)" -- \
+  -p git \
+  -p fzf \
+  -a "source /usr/share/doc/fzf/examples/key-bindings.zsh" \
+  -a "source /usr/share/doc/fzf/examples/completion.zsh" \
+  -a "export PROMPT_COMMAND='history -a' && export HISTFILE=/commandhistory/.bash_history" \
+  -x
+
+# Install Claude
+RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
+
+# Copy and set up firewall script
+COPY init-firewall.sh /usr/local/bin/
+USER root
+RUN chmod +x /usr/local/bin/init-firewall.sh && \
+  echo "carol ALL=(root) NOPASSWD: /usr/local/bin/init-firewall.sh" > /etc/sudoers.d/carol-firewall && \
+  chmod 0440 /etc/sudoers.d/carol-firewall
+USER carol
