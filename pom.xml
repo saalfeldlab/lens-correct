@@ -31,12 +31,20 @@
 		<!-- Java version -->
 		<maven.compiler.release>17</maven.compiler.release>
 
+		<!-- Main class for CLI -->
+		<main-class>org.janelia.saalfeldlab.confocallens.ConfocalLensCLI</main-class>
+
+		<!-- App packaging properties -->
+		<app.name>confocal-lens</app.name>
+		<app.version>${project.version}</app.version>
+
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
 		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
 
 		<TrakEM2.version>2.0.1</TrakEM2.version>
 
 		<enforcer.skip>true</enforcer.skip>
+		<mpicbg.version>1.6.0</mpicbg.version>
 	</properties>
 
 	<dependencies>
@@ -55,6 +63,10 @@
 		<dependency>
 			<groupId>sc.fiji</groupId>
 			<artifactId>TrakEM2_</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>mpicbg</groupId>
+			<artifactId>mpicbg</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>net.imglib2</groupId>
@@ -80,6 +92,11 @@
 			<groupId>info.picocli</groupId>
 			<artifactId>picocli</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -101,13 +118,154 @@
 				<artifactId>exec-maven-plugin</artifactId>
 				<version>3.1.0</version>
 				<configuration>
+					<mainClass>${main-class}</mainClass>
 					<commandlineArgs>
 						-Djava.awt.headless=true
 						--add-opens=java.desktop/javax.swing=ALL-UNNAMED
 						--add-opens=java.base/java.lang=ALL-UNNAMED
+						--add-opens=java.io/java.lang=ALL-UNNAMED
 					</commandlineArgs>
 				</configuration>
 			</plugin>
+			<!-- Create executable JAR with dependencies -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.6.0</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<archive>
+						<manifest>
+							<mainClass>${main-class}</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Copy dependencies for jpackage -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.6.0</version>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/dependency</outputDirectory>
+							<includeScope>runtime</includeScope>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- OS detection for platform-specific packaging -->
+			<plugin>
+				<groupId>kr.motd.maven</groupId>
+				<artifactId>os-maven-plugin</artifactId>
+				<version>1.7.1</version>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>detect</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- jlink and jpackage for creating installers -->
+			<!-- Temporarily commented out - needs configuration fixes
+			<plugin>
+				<groupId>io.github.wiverson</groupId>
+				<artifactId>jtoolprovider-plugin</artifactId>
+				<version>1.0.34</version>
+				<executions>
+					<!- - Create custom JVM with jlink - ->
+					<execution>
+						<id>jlink</id>
+						<phase>package</phase>
+						<goals>
+							<goal>java-tool</goal>
+						</goals>
+						<configuration>
+							<toolName>jlink</toolName>
+							<removeArgs>
+								<removeArg>- -module-path</removeArg>
+							</removeArgs>
+							<addArgs>
+								<addArg>- -module-path</addArg>
+								<addArg>${java.home}/jmods</addArg>
+								<addArg>- -add-modules</addArg>
+								<addArg>ALL-MODULE-PATH</addArg>
+								<addArg>- -output</addArg>
+								<addArg>${project.build.directory}/jvm-image</addArg>
+								<addArg>- -strip-debug</addArg>
+								<addArg>- -compress</addArg>
+								<addArg>2</addArg>
+								<addArg>- -no-header-files</addArg>
+								<addArg>- -no-man-pages</addArg>
+							</addArgs>
+						</configuration>
+					</execution>
+					<!- - Create platform-specific installer with jpackage - ->
+					<execution>
+						<id>jpackage</id>
+						<phase>install</phase>
+						<goals>
+							<goal>java-tool</goal>
+						</goals>
+						<configuration>
+							<toolName>jpackage</toolName>
+							<removeArgs>
+								<removeArg>- -module-path</removeArg>
+							</removeArgs>
+							<addArgs>
+								<addArg>- -input</addArg>
+								<addArg>${project.build.directory}</addArg>
+								<addArg>- -name</addArg>
+								<addArg>${app.name}</addArg>
+								<addArg>- -main-jar</addArg>
+								<addArg>${project.build.finalName}-jar-with-dependencies.jar</addArg>
+								<addArg>- -main-class</addArg>
+								<addArg>${main-class}</addArg>
+								<addArg>- -runtime-image</addArg>
+								<addArg>${project.build.directory}/jvm-image</addArg>
+								<addArg>- -app-version</addArg>
+								<addArg>${app.version}</addArg>
+								<addArg>- -vendor</addArg>
+								<addArg>Janelia Saalfeld Lab</addArg>
+								<addArg>- -description</addArg>
+								<addArg>${project.description}</addArg>
+								<addArg>- -copyright</addArg>
+								<addArg>GPL v3</addArg>
+								<addArg>- -dest</addArg>
+								<addArg>${project.build.directory}/installer</addArg>
+								<addArg>- -java-options</addArg>
+								<addArg>-Djava.awt.headless=true</addArg>
+								<addArg>- -java-options</addArg>
+								<addArg>- -add-opens=java.desktop/javax.swing=ALL-UNNAMED</addArg>
+								<addArg>- -java-options</addArg>
+								<addArg>- -add-opens=java.base/java.lang=ALL-UNNAMED</addArg>
+								<addArg>- -java-options</addArg>
+								<addArg>- -add-opens=java.base/java.io=ALL-UNNAMED</addArg>
+							</addArgs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			-->
 		</plugins>
 	</build>
 

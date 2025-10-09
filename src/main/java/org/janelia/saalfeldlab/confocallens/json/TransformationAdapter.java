@@ -1,4 +1,4 @@
-package org.janelia.saalfeldlab.confocallens;
+package org.janelia.saalfeldlab.confocallens.json;
 
 import java.lang.reflect.Type;
 
@@ -12,15 +12,39 @@ import com.google.gson.JsonSerializer;
 import mpicbg.trakem2.transform.CoordinateTransform;
 import mpicbg.trakem2.transform.CoordinateTransformList;
 
+/**
+ * GSON adapter to serialize and deserialize {@link CoordinateTransform}s.
+ * This is used to import and export the calibration from/to JSON files. Example:
+ * <pre>
+ * {
+ *   "className": "mpicbg.trakem2.transform.AffineModel2D",
+ *   "dataString": "...",
+ * }
+ * </pre>
+ *
+ * Or nested transformation lists:
+ * <pre>
+ * {
+ *   "className": "mpicbg.trakem2.transform.CoordinateTransformList",
+ *   "transforms": [{
+ *       "className": "mpicbg.trakem2.transform.AffineModel2D",
+ *       "dataString": "..."}, {
+ *       "className": "lenscorrection.NonLinearTransform",
+ *       "dataString": "..."}, {
+ *       "className": "mpicbg.trakem2.transform.CoordinateTransformList",
+ *       "transforms": [...]},
+ *      ...]}
+ * </pre>
+ */
 public class TransformationAdapter implements JsonDeserializer<CoordinateTransform>, JsonSerializer<CoordinateTransform> {
-    
+
     @SuppressWarnings("unchecked")
     @Override
     public CoordinateTransform deserialize(
             final JsonElement json,
             final Type typeOfT,
             final JsonDeserializationContext context) throws com.google.gson.JsonParseException {
-        
+
         final JsonObject jsonObject = json.getAsJsonObject();
 		final JsonElement jsonType = jsonObject.get("className");
 		if (jsonType == null)
@@ -41,7 +65,7 @@ public class TransformationAdapter implements JsonDeserializer<CoordinateTransfo
         } else {
             try {
                 final Class<?> clazz = Class.forName(className);
-                final CoordinateTransform transform = (CoordinateTransform)clazz.newInstance();
+                final CoordinateTransform transform = (CoordinateTransform)clazz.getDeclaredConstructor().newInstance();
                 transform.init(jsonObject.get("dataString").getAsString());
                 return transform;
             } catch (final Exception e) {
@@ -58,7 +82,7 @@ public class TransformationAdapter implements JsonDeserializer<CoordinateTransfo
             final CoordinateTransform src,
             final java.lang.reflect.Type typeOfSrc,
             final com.google.gson.JsonSerializationContext context) {
-        
+
         final Class<? extends CoordinateTransform> clazz = src.getClass();
         final JsonObject json = new JsonObject();
 

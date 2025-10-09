@@ -22,16 +22,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FileUtils;
-import org.json.JSONArray;
-import org.json.JSONObject;
+import org.janelia.saalfeldlab.confocallens.json.CalibrationParams;
+import org.janelia.saalfeldlab.confocallens.json.InputParams;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -58,15 +51,6 @@ import lenscorrection.DistortionCorrectionTask;
 import lenscorrection.DistortionCorrectionTask.CorrectDistortionFromSelectionParam;
 import loci.plugins.BF;
 import mpicbg.ij.plugin.NormalizeLocalContrast;
-//import mpicbg.models.AffineModel2D;
-//import mpicbg.models.CoordinateTransformList;
-//import mpicbg.models.IdentityModel;
-//import mpicbg.models.IllDefinedDataPointsException;
-//import mpicbg.models.Model;
-//import mpicbg.models.NotEnoughDataPointsException;
-//import mpicbg.models.Point;
-//import mpicbg.models.PointMatch;
-//import mpicbg.models.RigidModel2D;
 import mpicbg.models.AffineModel2D;
 import mpicbg.models.CoordinateTransformList;
 import mpicbg.models.IdentityModel;
@@ -80,17 +64,31 @@ import mpicbg.trakem2.align.Align;
 import mpicbg.trakem2.align.AlignTask;
 import mpicbg.trakem2.align.RegularizedAffineLayerAlignment;
 import mpicbg.trakem2.transform.CoordinateTransform;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
-public class Automation {
+@Command(
+    name = "automation",
+    mixinStandardHelpOptions = true,
+    description = "Automated lens-calibration for multiple channels"
+)
+public class CalibrateChannels implements java.util.concurrent.Callable<Integer> {
 
-	static String[] lambdas = new String[]{
-		"488nm, pass1",
-		"594nm",
-		"488nm, pass2",
-		"561nm",
-		"647nm"};
+	@Option(names = {"-i", "--input"}, required = true, description = "input directory")
+	private String inputDir;
 
-	static String format = "%s, %s, %s";
+	@Option(names = {"-o", "--output"}, required = true, description = "output directory")
+	private String outputDir;
+
+	@Option(names = {"-p", "--calibration-params"}, description = "path to calibration parameters file (default: built-in calibration-params.json)")
+	private String calibrationParamsPath;
+
+	@Option(names = {"-j", "--input-params"}, required = true, description = "path to input parameters file containing patterns and labels")
+	private String inputParamsPath;
+
+	@Option(names = {"-n", "--name"}, required = true, description = "project name for output files and transformation labels")
+	private String projectName;
 
 	static Class<?> invarianceModelClass = IdentityModel.class;
 
@@ -535,388 +533,63 @@ public class Automation {
 	}
 
 
-	public static void main(final String[] args)
-	{
-		final Options options = new Options();
+	@Override
+	public Integer call() throws Exception {
+		// Remove trailing separators from paths
+		String dirPath = inputDir.endsWith(File.separator)
+			? inputDir.substring(0, inputDir.length() - 1)
+			: inputDir;
+		String outdir = outputDir.endsWith(File.separator)
+			? outputDir.substring(0, outputDir.length() - 1)
+			: outputDir;
 
-        final Option in_op = new Option("i", "input", true, "input directory");
-        in_op .setRequired(true);
-        options.addOption(in_op);
-
-        final Option out_op = new Option("o", "output", true, "output directory");
-        out_op.setRequired(true);
-        options.addOption(out_op);
-
-        final Option param_op = new Option("p", "param", true, "path to parameter setting file");
-        param_op.setRequired(true);
-        options.addOption(param_op);
-
-        final Option scope_op = new Option("n", "scope", true, "scope name");
-        scope_op.setRequired(true);
-        options.addOption(scope_op);
-
-        final Option sample_op = new Option("s", "sample", true, "sample name");
-        sample_op.setRequired(true);
-        options.addOption(sample_op);
-
-        final CommandLineParser parser = new DefaultParser();
-        final HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;
-
-        try {
-            cmd = parser.parse(options, args);
-        } catch (final ParseException e) {
-            System.out.println(e.getMessage());
-            formatter.printHelp("LensDistCorrection", options);
-
-            System.exit(1);
-            return;
-        }
-
-        String dir_path = cmd.getOptionValue("input");
-        String outdir = cmd.getOptionValue("output");
-        final String parampath = cmd.getOptionValue("param");
-        final String scope = cmd.getOptionValue("scope");
-        final String sample = cmd.getOptionValue("sample");
-        final String pname = scope + "_" + sample;
-
-        System.out.println("input_dir: " + dir_path);
-        System.out.println("output_dir: " + outdir);
-        System.out.println("settings: " + parampath);
-        System.out.println("project_name: " + pname);
-
-        if (dir_path.endsWith(File.separator))
-        	dir_path = dir_path.substring(0, dir_path.length() - 1);
-        if (outdir.endsWith(File.separator))
-        	outdir = outdir.substring(0, outdir.length() - 1);
+        System.out.println("input directory: " + inputDir);
+        System.out.println("output directory: " + outputDir);
+        System.out.println("calibration settings: " + (calibrationParamsPath != null ? calibrationParamsPath : "default (built-in calibration-params.json)"));
+        System.out.println("input parameters: " + inputParamsPath);
+        System.out.println("project name: " + projectName);
 
 		try
 		{
-
-			String jsontxt = "";
-	        try
-	        {
-	        	jsontxt = new String ( Files.readAllBytes( Paths.get(parampath) ) );
-	        }
-	        catch (final IOException e)
-	        {
-	            e.printStackTrace();
-	        }
-	        final JSONObject jo = new JSONObject(jsontxt);
-
-	        final int maxNumThreads = Runtime.getRuntime().availableProcessors();
-
-	        final JSONObject montage_jo = jo.getJSONObject("montageLayers");
-	        final Align.ParamOptimize param = new Align.ParamOptimize();
-			param.sift.initialSigma = (float)montage_jo.getDouble("initialSigma");
-			param.sift.steps = montage_jo.getInt("steps");
-			param.sift.minOctaveSize = montage_jo.getInt("minOctaveSize");
-			param.sift.maxOctaveSize = montage_jo.getInt("maxOctaveSize");
-			param.sift.fdSize = montage_jo.getInt("fdSize");
-			param.sift.fdBins = montage_jo.getInt("fdBins");
-			param.rod = (float)montage_jo.getDouble("rod");
-			param.maxEpsilon = (float)montage_jo.getDouble("maxEpsilon");
-			param.minInlierRatio = (float)montage_jo.getDouble("minInlierRatio");
-			param.minNumInliers = montage_jo.getInt("minNumInliers");
-			param.expectedModelIndex = montage_jo.getInt("expectedModelIndex");
-			param.rejectIdentity = montage_jo.getBoolean("rejectIdentity");
-			param.identityTolerance = (float)montage_jo.getDouble("identityTolerance");
-			param.desiredModelIndex = montage_jo.getInt("desiredModelIndex");
-			param.correspondenceWeight = (float)montage_jo.getDouble("correspondenceWeight");
-			param.regularize = montage_jo.getBoolean("regularize");
-			param.maxIterations = montage_jo.getInt("maxIterations");
-			param.maxPlateauwidth = montage_jo.getInt("maxPlateauwidth");
-			param.filterOutliers = montage_jo.getBoolean("filterOutliers");
-			param.meanFactor = (float)montage_jo.getDouble("meanFactor");
-
-//			param.sift.initialSigma = 1.6f;
-//			param.sift.steps = 3;
-//			param.sift.minOctaveSize = 400;
-//			param.sift.maxOctaveSize = 900;
-//			param.sift.fdSize = 4;
-//			param.sift.fdBins = 8;
-//			param.rod = 0.92f;
-//			param.maxEpsilon = 50.0f;
-//			param.minInlierRatio = 0.0f;
-//			param.minNumInliers = 20;
-//			param.expectedModelIndex = 0;
-//			param.rejectIdentity = false;
-//			param.identityTolerance = 0.5f;
-//			param.desiredModelIndex = 0;
-//			param.correspondenceWeight = 1.0f;
-//			param.regularize = false;
-//			param.maxIterations = 2000;
-//			param.maxPlateauwidth = 200;
-//			param.filterOutliers = false;
-//			param.meanFactor = 3.0f;
-
-
-			final JSONObject align_jo = jo.getJSONObject("alignLayers");
-			final RegularizedAffineLayerAlignment.Param param2 = new RegularizedAffineLayerAlignment.Param(
-					align_jo.getInt("SIFTfdBins"),//SIFTfdBins,
-					align_jo.getInt("SIFTfdSize"),//SIFTfdSize,
-					(float)align_jo.getDouble("SIFTinitialSigma"),//SIFTinitialSigma,
-					align_jo.getInt("SIFTmaxOctaveSize"),//SIFTmaxOctaveSize,
-					align_jo.getInt("SIFTminOctaveSize"),//SIFTminOctaveSize,
-					align_jo.getInt("SIFTsteps"),//SIFTsteps,
-					align_jo.getBoolean("clearCache"),//clearCache,
-					maxNumThreads,//maxNumThreadsSift,
-					(float)align_jo.getDouble("rod"),//rod,
-					align_jo.getInt("desiredModelIndex"),//desiredModelIndex,
-					align_jo.getInt("expectedModelIndex"),//expectedModelIndex,
-					(float)align_jo.getDouble("identityTolerance"),//identityTolerance,
-					(float)align_jo.getDouble("lambda"),//lambda,
-					(float)align_jo.getDouble("maxEpsilon"),////maxEpsilon,
-					align_jo.getInt("maxIterationsOptimize"),//maxIterationsOptimize,
-					align_jo.getInt("maxNumFailures"),//maxNumFailures,
-					align_jo.getInt("maxNumNeighbors"),//maxNumNeighbors,
-					maxNumThreads,//maxNumThreads,
-					align_jo.getInt("maxPlateauwidthOptimize"),//maxPlateauwidthOptimize,
-					(float)align_jo.getDouble("minInlierRatio"),//minInlierRatio,
-					align_jo.getInt("minNumInliers"),//minNumInliers,
-					align_jo.getBoolean("multipleHypotheses"),//multipleHypotheses,
-					align_jo.getBoolean("widestSetOnly"),//widestSetOnly,
-					align_jo.getBoolean("regularize"),//regularize,
-					align_jo.getInt("regularizerIndex"),//regularizerIndex,
-					align_jo.getBoolean("rejectIdentity"),//rejectIdentity,
-					false//visualize
-			);
-
-//			RegularizedAffineLayerAlignment.Param param2 = new RegularizedAffineLayerAlignment.Param(
-//					8,//SIFTfdBins,
-//					4,//SIFTfdSize,
-//					1.6f,//SIFTinitialSigma,
-//					1200,//SIFTmaxOctaveSize,
-//					400,//SIFTminOctaveSize,
-//					3,//SIFTsteps,
-//					true,//clearCache,
-//					maxNumThreads,//maxNumThreadsSift,
-//					0.92f,//rod,
-//					0,//desiredModelIndex,
-//					0,//expectedModelIndex,
-//					5.0f,//identityTolerance,
-//					0.1f,//lambda,
-//					200.0f,////maxEpsilon,
-//					1000,//maxIterationsOptimize,
-//					5,//maxNumFailures,
-//					5,//maxNumNeighbors,
-//					maxNumThreads,//maxNumThreads,
-//					200,//maxPlateauwidthOptimize,
-//					0.0f,//minInlierRatio,
-//					20,//minNumInliers,
-//					true,//multipleHypotheses,
-//					false,//widestSetOnly,
-//					false,//regularize,
-//					1,//regularizerIndex,
-//					false,//rejectIdentity,
-//					false//visualize
-//			);
-//			boolean propagateTransformBefore = false;
-//			boolean propagateTransformAfter = false;
-
-
-			final JSONObject cd_jo = jo.getJSONObject("correctDistortion");
-			final CorrectDistortionFromSelectionParam p = new CorrectDistortionFromSelectionParam();
-			p.sift.initialSigma = (float)cd_jo.getDouble("initialSigma");
-			p.sift.steps = cd_jo.getInt("steps");
-			p.sift.minOctaveSize = cd_jo.getInt("minOctaveSize");
-			p.sift.maxOctaveSize = cd_jo.getInt("maxOctaveSize");
-			p.sift.fdSize = cd_jo.getInt("fdSize");
-			p.sift.fdBins = cd_jo.getInt("fdBins");
-			p.rod = (float)cd_jo.getDouble("rod");
-			p.maxNumThreadsSift = maxNumThreads;
-
-			p.maxEpsilon = (float)cd_jo.getDouble("maxEpsilon");
-			p.minInlierRatio = (float)cd_jo.getDouble("minInlierRatio");
-			p.minNumInliers = cd_jo.getInt("minNumInliers");
-			p.expectedModelIndex = cd_jo.getInt("expectedModelIndex");
-			p.multipleHypotheses = cd_jo.getBoolean("multipleHypotheses");
-			p.rejectIdentity = cd_jo.getBoolean("rejectIdentity");
-			p.identityTolerance = (float)cd_jo.getDouble("identityTolerance");
-			p.tilesAreInPlace = cd_jo.getBoolean("tilesAreInPlace");
-
-			p.desiredModelIndex = cd_jo.getInt("desiredModelIndex");
-			p.regularize = cd_jo.getBoolean("regularize");
-			p.regularizerIndex = cd_jo.getInt("regularizerIndex");
-			p.lambdaRegularize = (float)cd_jo.getDouble("lambdaRegularize");
-			p.maxIterationsOptimize = cd_jo.getInt("maxIterationsOptimize");
-			p.maxPlateauwidthOptimize = cd_jo.getInt("maxPlateauwidthOptimize");
-
-			p.dimension = cd_jo.getInt("dimension");
-			p.lambda = (float)cd_jo.getDouble("lambda");
-			p.clearTransform = cd_jo.getBoolean("clearTransform");
-			p.visualize = false;
-
-//			CorrectDistortionFromSelectionParam p = new CorrectDistortionFromSelectionParam();
-//			p.sift.initialSigma = 1.6f;
-//			p.sift.steps = 3;
-//			p.sift.minOctaveSize = 400;
-//			p.sift.maxOctaveSize = 900;
-//			p.sift.fdSize = 4;
-//			p.sift.fdBins = 8;
-//			p.rod = 0.92f;
-//			p.maxNumThreadsSift = maxNumThreads;
-//
-//			p.maxEpsilon = 5.0f;
-//			p.minInlierRatio = 0.0f;
-//			p.minNumInliers = 5;
-//			p.expectedModelIndex = 1;
-//			p.multipleHypotheses = true;
-//			p.rejectIdentity = false;
-//			p.identityTolerance = 5.0f;
-//			p.tilesAreInPlace = true;
-//
-//			p.desiredModelIndex = 0;
-//			p.regularize = false;
-//			p.regularizerIndex = 0;
-//			p.lambdaRegularize = 0.01;
-//			p.maxIterationsOptimize = 2000;
-//			p.maxPlateauwidthOptimize = 200;
-//
-//			p.dimension = 5;
-//			p.lambda = 0.01f;
-//			p.clearTransform = true;
-//			p.visualize = false;
-
-			final JSONObject align2_jo = jo.getJSONObject("alignLayers2");
-			final RegularizedAffineLayerAlignment.Param param3 = new RegularizedAffineLayerAlignment.Param(
-					align2_jo.getInt("SIFTfdBins"),//SIFTfdBins,
-					align2_jo.getInt("SIFTfdSize"),//SIFTfdSize,
-					(float)align2_jo.getDouble("SIFTinitialSigma"),//SIFTinitialSigma,
-					align2_jo.getInt("SIFTmaxOctaveSize"),//SIFTmaxOctaveSize,
-					align2_jo.getInt("SIFTminOctaveSize"),//SIFTminOctaveSize,
-					align2_jo.getInt("SIFTsteps"),//SIFTsteps,
-					align2_jo.getBoolean("clearCache"),//clearCache,
-					maxNumThreads,//maxNumThreadsSift,
-					(float)align2_jo.getDouble("rod"),//rod,
-					align2_jo.getInt("desiredModelIndex"),//desiredModelIndex,
-					align2_jo.getInt("expectedModelIndex"),//expectedModelIndex,
-					(float)align2_jo.getDouble("identityTolerance"),//identityTolerance,
-					(float)align2_jo.getDouble("lambda"),//lambda,
-					(float)align2_jo.getDouble("maxEpsilon"),////maxEpsilon,
-					align2_jo.getInt("maxIterationsOptimize"),//maxIterationsOptimize,
-					align2_jo.getInt("maxNumFailures"),//maxNumFailures,
-					align2_jo.getInt("maxNumNeighbors"),//maxNumNeighbors,
-					maxNumThreads,//maxNumThreads,
-					align2_jo.getInt("maxPlateauwidthOptimize"),//maxPlateauwidthOptimize,
-					(float)align2_jo.getDouble("minInlierRatio"),//minInlierRatio,
-					align2_jo.getInt("minNumInliers"),//minNumInliers,
-					align2_jo.getBoolean("multipleHypotheses"),//multipleHypotheses,
-					align2_jo.getBoolean("widestSetOnly"),//widestSetOnly,
-					align2_jo.getBoolean("regularize"),//regularize,
-					align2_jo.getInt("regularizerIndex"),//regularizerIndex,
-					align2_jo.getBoolean("rejectIdentity"),//rejectIdentity,
-					false//visualize
-			);
-//			RegularizedAffineLayerAlignment.Param param3 = new RegularizedAffineLayerAlignment.Param(
-//					8,//SIFTfdBins,
-//					4,//SIFTfdSize,
-//					1.6f,//SIFTinitialSigma,
-//					1200,//SIFTmaxOctaveSize,
-//					400,//SIFTminOctaveSize,
-//					3,//SIFTsteps,
-//					true,//clearCache,
-//					maxNumThreads,//maxNumThreadsSift,
-//					0.92f,//rod,
-//					3,//desiredModelIndex,
-//					0,//expectedModelIndex,
-//					5.0f,//identityTolerance,
-//					0.01f,//lambda,
-//					200.0f,////maxEpsilon,
-//					1000,//maxIterationsOptimize,
-//					5,//maxNumFailures,
-//					5,//maxNumNeighbors,
-//					maxNumThreads,//maxNumThreads,
-//					200,//maxPlateauwidthOptimize,
-//					0.0f,//minInlierRatio,
-//					20,//minNumInliers,
-//					true,//multipleHypotheses,
-//					false,//widestSetOnly,
-//					true,//regularize,
-//					0,//regularizerIndex,
-//					false,//rejectIdentity,
-//					false//visualize
-//			);
-
-			final JSONObject align3_jo = jo.getJSONObject("alignLayers3");
-			final RegularizedAffineLayerAlignment.Param param4 = new RegularizedAffineLayerAlignment.Param(
-					align3_jo.getInt("SIFTfdBins"),//SIFTfdBins,
-					align3_jo.getInt("SIFTfdSize"),//SIFTfdSize,
-					(float)align3_jo.getDouble("SIFTinitialSigma"),//SIFTinitialSigma,
-					align3_jo.getInt("SIFTmaxOctaveSize"),//SIFTmaxOctaveSize,
-					align3_jo.getInt("SIFTminOctaveSize"),//SIFTminOctaveSize,
-					align3_jo.getInt("SIFTsteps"),//SIFTsteps,
-					align3_jo.getBoolean("clearCache"),//clearCache,
-					maxNumThreads,//maxNumThreadsSift,
-					(float)align3_jo.getDouble("rod"),//rod,
-					align3_jo.getInt("desiredModelIndex"),//desiredModelIndex,
-					align3_jo.getInt("expectedModelIndex"),//expectedModelIndex,
-					(float)align3_jo.getDouble("identityTolerance"),//identityTolerance,
-					(float)align3_jo.getDouble("lambda"),//lambda,
-					(float)align3_jo.getDouble("maxEpsilon"),////maxEpsilon,
-					align3_jo.getInt("maxIterationsOptimize"),//maxIterationsOptimize,
-					align3_jo.getInt("maxNumFailures"),//maxNumFailures,
-					align3_jo.getInt("maxNumNeighbors"),//maxNumNeighbors,
-					maxNumThreads,//maxNumThreads,
-					align3_jo.getInt("maxPlateauwidthOptimize"),//maxPlateauwidthOptimize,
-					(float)align3_jo.getDouble("minInlierRatio"),//minInlierRatio,
-					align3_jo.getInt("minNumInliers"),//minNumInliers,
-					align3_jo.getBoolean("multipleHypotheses"),//multipleHypotheses,
-					align3_jo.getBoolean("widestSetOnly"),//widestSetOnly,
-					align3_jo.getBoolean("regularize"),//regularize,
-					align3_jo.getInt("regularizerIndex"),//regularizerIndex,
-					align3_jo.getBoolean("rejectIdentity"),//rejectIdentity,
-					false//visualize
-			);
-//			RegularizedAffineLayerAlignment.Param param4 = new RegularizedAffineLayerAlignment.Param(
-//					8,//SIFTfdBins,
-//					4,//SIFTfdSize,
-//					1.6f,//SIFTinitialSigma,
-//					1200,//SIFTmaxOctaveSize,
-//					400,//SIFTminOctaveSize,
-//					3,//SIFTsteps,
-//					true,//clearCache,
-//					maxNumThreads,//maxNumThreadsSift,
-//					0.92f,//rod,
-//					3,//desiredModelIndex,
-//					0,//expectedModelIndex,
-//					5.0f,//identityTolerance,
-//					0.01f,//lambda,
-//					50.0f,////maxEpsilon,
-//					1000,//maxIterationsOptimize,
-//					5,//maxNumFailures,
-//					5,//maxNumNeighbors,
-//					maxNumThreads,//maxNumThreads,
-//					200,//maxPlateauwidthOptimize,
-//					0.0f,//minInlierRatio,
-//					20,//minNumInliers,
-//					true,//multipleHypotheses,
-//					false,//widestSetOnly,
-//					true,//regularize,
-//					0,//regularizerIndex,
-//					false,//rejectIdentity,
-//					false//visualize
-//			);
-
-			final JSONObject input_pattern_jo = jo.getJSONObject("input");
-			final JSONArray input_patterns_ja = input_pattern_jo.getJSONArray("patterns");
-			final List<String> input_patterns = new ArrayList<String>();
-			for (int i = 0; i < input_patterns_ja.length(); i++) {
-				input_patterns.add(input_patterns_ja.getString(i));
+			// Load calibration parameters from JSON file or use default resource
+			final CalibrationParams calibParams;
+			if (calibrationParamsPath != null) {
+				calibParams = CalibrationParams.load(calibrationParamsPath);
+			} else {
+				calibParams = CalibrationParams.loadFromResource("/calibration-params.json");
 			}
+
+			// Load input parameters (must be provided by user)
+			final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			final InputParams inputParams = gson.fromJson(
+				Files.readString(Paths.get(inputParamsPath)),
+				InputParams.class
+			);
+
+			final int maxNumThreads = Runtime.getRuntime().availableProcessors();
+
+			// Convert to TrakEM2 parameters
+			final Align.ParamOptimize param = calibParams.getMontageLayers().toAlignParam();
+			final RegularizedAffineLayerAlignment.Param param2 = calibParams.getAlignLayers().toRegularizedAffineParam(maxNumThreads);
+			final CorrectDistortionFromSelectionParam p = calibParams.getCorrectDistortion().toDistortionParam(maxNumThreads);
+			final RegularizedAffineLayerAlignment.Param param3 = calibParams.getAlignLayers2().toRegularizedAffineParam(maxNumThreads);
+			final RegularizedAffineLayerAlignment.Param param4 = calibParams.getAlignLayers3().toRegularizedAffineParam(maxNumThreads);
+
+			final List<String> inputPatterns = inputParams.getPatterns();
+			final List<String> inputLabels = inputParams.getLabels();
 
 			final String[] extensions = {"lsm", "LSM"};
 
 			//new ImageJ();
 
 			//read lsm files and generate mip images
-			final List<String> flist = findFiles(Paths.get(dir_path), extensions);
+			final List<String> flist = findFiles(Paths.get(dirPath), extensions);
 			flist.sort(Comparator.naturalOrder());
 
-			final HashMap<String, List<ImagePlus>> map_mips = new HashMap<String, List<ImagePlus>>();
+			final HashMap<String, List<ImagePlus>> mapMips = new HashMap<String, List<ImagePlus>>();
 			for (int i = 0; i < flist.size(); i++)
 			{
-				for (final String pattern : input_patterns)
+				for (final String pattern : inputPatterns)
 				{
 					final Pattern pt = Pattern.compile(pattern);
 				    final Matcher mt = pt.matcher(flist.get(i));
@@ -939,12 +612,12 @@ public class Automation {
 
 						imp.resetDisplayRange();
 
-						final ImagePlus mip_imp = ZMaxProjection(imp);
-						HyperStackConverter.toStack(mip_imp);
+						final ImagePlus mipImp = ZMaxProjection(imp);
+						HyperStackConverter.toStack(mipImp);
 
-						if (!map_mips.containsKey(pattern))
-							map_mips.put(pattern, new ArrayList<ImagePlus>());
-						map_mips.get(pattern).add(mip_imp);
+						if (!mapMips.containsKey(pattern))
+							mapMips.put(pattern, new ArrayList<ImagePlus>());
+						mapMips.get(pattern).add(mipImp);
 
 						imp.close();
 						break;
@@ -952,62 +625,62 @@ public class Automation {
 				}
 			}
 
-			if (map_mips.size() == 0)
+			if (mapMips.size() == 0)
 				throw new RuntimeException("mip creation failed.");
 
 			//save mip images
 			//normalize local contrast brx 127 bry 127 stds 3.0 (all layers)
-			final String strage_dir = outdir+File.separator+pname;
-			FileUtils.forceMkdir(new File(strage_dir));
+			final String storageDir = outdir + File.separator + projectName;
+			FileUtils.forceMkdir(new File(storageDir));
 
 			final int brx = 127;
 			final int bry = 127;
 			final float stds = 3.0f;
 			int layernum = 0;
-			final HashMap<Integer, ArrayList<String>> layer_patch_paths = new HashMap<Integer, ArrayList<String>>();
-			for (final List<ImagePlus> implist : map_mips.values()) {
-				int max_ch_num = 0;
+			final HashMap<Integer, ArrayList<String>> layerPatchPaths = new HashMap<Integer, ArrayList<String>>();
+			for (final List<ImagePlus> implist : mapMips.values()) {
+				int maxChNum = 0;
 				for (int i = 0; i < implist.size(); i++)
 				{
 					final ImagePlus mip = implist.get(i);
-					int layer_id = layernum;
+					int layerId = layernum;
 					final ImageStack sstack = mip.getStack();
 					for (int s = 1; s <= sstack.getSize(); s++)
 					{
 						NormalizeLocalContrast.run(sstack.getProcessor(s), brx, bry, stds, true, true);
-						final String fname = String.format("layer_%02d_pos_%02d.tif", layer_id, i);
+						final String fname = String.format("layer_%02d_pos_%02d.tif", layerId, i);
 						final ImagePlus tmp = new ImagePlus(fname, sstack.getProcessor(s).duplicate());
 						final FileSaver saver = new FileSaver(tmp);
-						final String fpath = strage_dir + File.separator + fname;
+						final String fpath = storageDir + File.separator + fname;
 						saver.saveAsTiff(fpath);
-						if (!layer_patch_paths.containsKey(layer_id))
-							layer_patch_paths.put(layer_id, new ArrayList<String>());
-						layer_patch_paths.get(layer_id).add(fpath);
+						if (!layerPatchPaths.containsKey(layerId))
+							layerPatchPaths.put(layerId, new ArrayList<String>());
+						layerPatchPaths.get(layerId).add(fpath);
 						tmp.close();
-						layer_id++;
+						layerId++;
 					}
-					if (layer_id > max_ch_num)
-						max_ch_num = layer_id;
+					if (layerId > maxChNum)
+						maxChNum = layerId;
 				}
-				layernum = max_ch_num;
+				layernum = maxChNum;
 			}
 
-			for (final String pattern : input_patterns)
+			for (final String pattern : inputPatterns)
 				System.out.println(pattern);
 			System.out.println(layernum);
 			for (int i = 0; i < layernum; i++)
 			{
-				final ArrayList<String> path_list = layer_patch_paths.get(i);
-				for (int s = 0; s < path_list.size(); s++)
+				final ArrayList<String> pathList = layerPatchPaths.get(i);
+				for (int s = 0; s < pathList.size(); s++)
 				{
-					System.out.println(path_list.get(s));
+					System.out.println(pathList.get(s));
 				}
 			}
 
 			//create a new trakem project.
 			ControlWindow.setGUIEnabled(false);
 
-			final Project project = Project.newFSProject("blank", null, strage_dir);
+			final Project project = Project.newFSProject("blank", null, storageDir);
 			final LayerSet layerset = project.getRootLayerSet();
 			for (int i = 0; i < layernum; i++)
 				  layerset.getLayer(i, 1, true);
@@ -1017,10 +690,10 @@ public class Automation {
 			for (int i = 0; i < layernum; i++)
 			{
 				final Layer layer = layerset.getLayer(i);
-				final ArrayList<String> path_list = layer_patch_paths.get(i);
-				for (int s = 0; s < path_list.size(); s++)
+				final ArrayList<String> pathList = layerPatchPaths.get(i);
+				for (int s = 0; s < pathList.size(); s++)
 				{
-					final Patch patch = Patch.createPatch(project, path_list.get(s));
+					final Patch patch = Patch.createPatch(project, pathList.get(s));
 					layer.add(patch);
 				}
 				layer.recreateBuckets();
@@ -1134,14 +807,14 @@ public class Automation {
 
 
 			//save trakem project
-			project.saveAs(strage_dir + File.separator + pname + "_trakem_proj.xml", true);
+			project.saveAs(storageDir + File.separator + projectName + "_trakem_proj.xml", true);
 
-			//String strage_dir = outdir+File.separator+pname;
-			//Project project = Project.openFSProject(strage_dir + File.separator + pname + "_trakem_proj.xml");
+			//String storageDir = outdir+File.separator+projectName;
+			//Project project = Project.openFSProject(storageDir + File.separator + projectName + "_trakem_proj.xml");
 			//LayerSet layerset = project.getRootLayerSet();
 
 			//output coordinate transform
-			final Gson gson = new GsonBuilder().setPrettyPrinting().create();
+			// gson already defined above
 
 			layerset.setMinimumDimensions();
 
@@ -1175,23 +848,23 @@ public class Automation {
 				maplist.add(exportTransform(ctl.get(0)));
 				maplist.add(exportTransform(ctl.get(1)));
 				final HashMap<String, Object> export = exportTransform(
-					String.format(format, scope, sample, lambdas[i]), maplist);
+					String.format("%s, %s", projectName, inputLabels.get(i)), maplist);
 				transformExports.add(export);
 			}
 
-			final String result_jsontxt = gson.toJson(transformExports);
-			final String jsonpath = outdir + File.separator + pname + ".json";
-			Files.write(Paths.get(jsonpath), result_jsontxt.getBytes());
-			System.out.println(result_jsontxt);
+			final String resultJson = gson.toJson(transformExports);
+			final String jsonpath = outdir + File.separator + projectName + ".json";
+			Files.write(Paths.get(jsonpath), resultJson.getBytes());
+			System.out.println(resultJson);
 
 
 			//compare lenses
-			final ArrayList<ArrayList<String>> tr_lists = new ArrayList<ArrayList<String>>();
-			final ArrayList<String> temp_id_list = new ArrayList<String>();
-			temp_id_list.add("Identity");
-			temp_id_list.add("mpicbg.trakem2.transform.AffineModel2D");
-			temp_id_list.add("1.0 0.0 0.0 1.0 0.0 0.0");
-			tr_lists.add(temp_id_list);
+			final ArrayList<ArrayList<String>> trLists = new ArrayList<ArrayList<String>>();
+			final ArrayList<String> tempIdList = new ArrayList<String>();
+			tempIdList.add("Identity");
+			tempIdList.add("mpicbg.trakem2.transform.AffineModel2D");
+			tempIdList.add("1.0 0.0 0.0 1.0 0.0 0.0");
+			trLists.add(tempIdList);
 			for (int i = 0; i < patches.size(); ++i) {
 				final Patch patch = patches.get(i);
 				@SuppressWarnings("unchecked")
@@ -1200,7 +873,7 @@ public class Automation {
 				final AffineModel2D affine = (AffineModel2D) cts.get(1);
 				affine.preConcatenate(affineModel);
 				final ArrayList<String> templist = new ArrayList<String>();
-				final String label = String.format("%s, %s", sample, lambdas[i]);
+				final String label = String.format("%s, %s", projectName, inputLabels.get(i));
 				final String classname1 = ctl.get(0).getClass().getName();
 				final String ctstr1 = ctl.get(0).toDataString();
 				final String classname2 = ctl.get(1).getClass().getName();
@@ -1210,19 +883,19 @@ public class Automation {
 				templist.add(ctstr1);
 				templist.add(classname2);
 				templist.add(ctstr2);
-				tr_lists.add(templist);
+				trLists.add(templist);
 			}
-			final String[][] transforms = new String[tr_lists.size()][];
+			final String[][] transforms = new String[trLists.size()][];
 			final String[] blankArray = new String[0];
-			for(int i = 0; i < tr_lists.size(); i++) {
-				transforms[i] = tr_lists.get(i).toArray(blankArray);
+			for(int i = 0; i < trLists.size(); i++) {
+				transforms[i] = trLists.get(i).toArray(blankArray);
 			}
 
 			final int iw = 256;
 			final int ih = 256;
 			final double max = 5;
-			final int pWidth = map_mips.values().iterator().next().get(0).getWidth();
-			final int pHeight = map_mips.values().iterator().next().get(0).getHeight();
+			final int pWidth = mapMips.values().iterator().next().get(0).getWidth();
+			final int pHeight = mapMips.values().iterator().next().get(0).getHeight();
 
 			final int ySkip = 4;
 			final int xSkip = 4;
@@ -1240,17 +913,17 @@ public class Automation {
 
 //			{
 //				FileSaver saver = new FileSaver(impDists);
-//				saver.saveAsTiff(outdir + File.separator + pname + "_dists" + ".tif");
+//				saver.saveAsTiff(outdir + File.separator + projectName + "_dists" + ".tif");
 //				FileSaver saver2 = new FileSaver(impVectors);
-//				saver2.saveAsTiff(outdir + File.separator + pname + "_vectors" + ".tif");
+//				saver2.saveAsTiff(outdir + File.separator + projectName + "_vectors" + ".tif");
 //			}
 
-			final ColorProcessor ip_src = (ColorProcessor)impVectors.getProcessor();
-			final ColorProcessor ip_dst = (ColorProcessor)impDists.getProcessor();
+			final ColorProcessor ipSrc = (ColorProcessor)impVectors.getProcessor();
+			final ColorProcessor ipDst = (ColorProcessor)impDists.getProcessor();
 
-			for(int y = 0; y < ip_src.getHeight(); y++) {
-				for(int x = y; x < ip_src.getWidth(); x++) {
-					ip_dst.set(x, y, ip_src.get(x, y));
+			for(int y = 0; y < ipSrc.getHeight(); y++) {
+				for(int x = y; x < ipSrc.getWidth(); x++) {
+					ipDst.set(x, y, ipSrc.get(x, y));
 				}
 			}
 
@@ -1258,16 +931,21 @@ public class Automation {
 			drawLabels(impDists, 26, transforms, iw, ih, xSkip, ySkip);
 
 			final FileSaver saver = new FileSaver(impDists);
-			final String compare_path = outdir + File.separator + pname + "_compare_lenses" + ".tif";
-			saver.saveAsTiff(compare_path);
+			final String comparePath = outdir + File.separator + projectName + "_compare_lenses" + ".tif";
+			saver.saveAsTiff(comparePath);
 
 			System.out.println("Done");
-			System.exit(0);
 
 		} catch (final Exception e) {
 			e.printStackTrace();
-			System.exit( 0 );
+			return 1;
 		}
+
+		return 0;
 	}
 
+	public static void main(final String[] args) {
+		final Integer exitCode = new CommandLine(new CalibrateChannels()).execute(args);
+		System.exit(exitCode);
+	}
 }
