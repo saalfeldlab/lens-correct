@@ -69,9 +69,9 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(
-    name = "automation",
+    name = "calibrate-channels",
     mixinStandardHelpOptions = true,
-    description = "Automated lens-calibration for multiple channels"
+    description = "Calibrate lens distortion and align multi-channel image stacks"
 )
 public class CalibrateChannels implements java.util.concurrent.Callable<Integer> {
 

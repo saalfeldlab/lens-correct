@@ -63,7 +63,7 @@ import picocli.CommandLine.Option;
 @Command(
     name = "apply-split",
     mixinStandardHelpOptions = true,
-    description = "Apply split calibration to image stacks"
+    description = "Apply lens-distortion correction and alignment to stacks of split-images or lens arrays"
 )
 public class ApplySplit implements Callable<Integer> {
 

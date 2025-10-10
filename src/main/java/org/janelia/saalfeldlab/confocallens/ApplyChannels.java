@@ -47,9 +47,9 @@ import picocli.CommandLine.Option;
  * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
  */
 @Command(
-    name = "apply",
+    name = "apply-channels",
     mixinStandardHelpOptions = true,
-    description = "Apply wavelength-dependent lens correction transforms to multi-channel images"
+    description = "Apply wavelength-dependent lens-distortion correction and alignment to multi-channel image stacks"
 )
 public class ApplyChannels implements Callable<Integer> {
 

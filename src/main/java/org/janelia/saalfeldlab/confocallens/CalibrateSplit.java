@@ -70,9 +70,9 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 @Command(
-    name = "calibrate",
+    name = "calibrate-split",
     mixinStandardHelpOptions = true,
-    description = "Calibrate lens distortion from confocal stacks (GuptaScope)"
+    description = "Calibrate lens distortion and align split-images or lens arrays"
 )
 public class CalibrateSplit implements java.util.concurrent.Callable<Integer> {
 

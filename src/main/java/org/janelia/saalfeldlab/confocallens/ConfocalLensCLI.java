@@ -25,15 +25,15 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
 
 /**
- * Main CLI tool for confocal lens correction and processing.
+ * CLI tool for confocal lens correction
  *
- * This tool provides several subcommands for different processing operations:
- * - calibrate: Calibrate lens distortion from confocal stacks (GuptaScope)
- * - apply-gupta: Apply GuptaScope calibration to image stacks
- * - apply: Apply general lens correction transforms
- * - automation: Automated processing pipeline
+ * Subcommands:
+ * - calibrate-split: Calibrate lens distortion and align split-images or lens arrays
+ * - calibrate-channels: Calibrate lens distortion and align multi-channel image stacks
+ * - apply-split: Apply lens calibration and alignment to stacks of split-images or lens arrays
+ * - apply-channels: Apply lens calibration and alignment to multi-channel image stacks
  *
- * @author Stephan Saalfeld
+ * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
  */
 @Command(
     name = "confocal-lens",
