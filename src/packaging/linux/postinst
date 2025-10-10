@@ -1,0 +1,1 @@
+ln -s /opt/confocal-lens/bin/confocal-lens /usr/local/bin/confocal-lens
