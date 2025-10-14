@@ -171,6 +171,21 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- Parse version to create macOS-compatible version string -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.4.0</version>
+				<executions>
+					<execution>
+						<id>parse-version</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>parse-version</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<!-- OS detection for platform-specific packaging -->
 			<plugin>
 				<groupId>kr.motd.maven</groupId>
@@ -312,6 +327,12 @@
 					<arch>x86_64</arch>
 				</os>
 			</activation>
+			<properties>
+				<!-- macOS requires version as X.X.X format, no SNAPSHOT suffix, and major version cannot be 0 -->
+				<!-- Hardcoded to 1 since macOS rejects 0.x.x versions -->
+				<!-- Original would be: ${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion} -->
+				<app.version.macos>1</app.version.macos>
+			</properties>
 		</profile>
 
 		<!-- macOS ARM/Silicon profile -->
@@ -323,6 +344,12 @@
 					<arch>aarch64</arch>
 				</os>
 			</activation>
+			<properties>
+				<!-- macOS requires version as X.X.X format, no SNAPSHOT suffix, and major version cannot be 0 -->
+				<!-- Hardcoded to 1 since macOS rejects 0.x.x versions -->
+				<!-- Original would be: ${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion} -->
+				<app.version.macos>1</app.version.macos>
+			</properties>
 		</profile>
 
 		<!-- Cross-platform build profile for CI/CD -->

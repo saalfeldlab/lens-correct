@@ -1,6 +1,6 @@
 --verbose
 --name "${app.name}"
---app-version ${app.version}
+--app-version ${app.version.macos}
 --type pkg
 --dest "${project.build.directory}/installer-${os.detected.name}"
 --main-class ${main-class}
