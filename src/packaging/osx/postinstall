@@ -1,0 +1,19 @@
+#!/bin/bash
+# Post-installation script for confocal-lens
+# Creates symlink in /usr/local/bin for command-line access
+
+# Create /usr/local/bin if it doesn't exist
+mkdir -p /usr/local/bin
+
+# Remove old symlink if it exists
+rm -f /usr/local/bin/confocal-lens
+
+# Create new symlink
+ln -s "/Applications/confocal-lens.app/Contents/MacOS/confocal-lens" "/usr/local/bin/confocal-lens"
+
+# Optional: Create uninstaller symlink (uncomment if uninstaller is included in app bundle)
+# ln -s "/Applications/confocal-lens.app/Contents/Resources/uninstall.sh" "/usr/local/bin/confocal-lens-uninstall"
+
+echo "confocal-lens has been installed. You can now use 'confocal-lens' from the terminal."
+
+exit 0

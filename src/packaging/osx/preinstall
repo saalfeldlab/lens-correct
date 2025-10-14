@@ -1,0 +1,10 @@
+#!/bin/bash
+# Pre-installation script for confocal-lens
+# Removes old symlink if it exists
+
+# Remove old symlink if it exists
+if [ -L "/usr/local/bin/confocal-lens" ]; then
+    rm -f /usr/local/bin/confocal-lens
+fi
+
+exit 0
