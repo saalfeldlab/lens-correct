@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build native installer for confocal-lens CLI tool
+# Build native installer for lens-correct CLI tool
 # Usage: ./build-installer.sh [platform]
 #   platform: linux, windows, osx (optional, defaults to current platform)
 
@@ -10,7 +10,7 @@ PLATFORM=$1
 MVN_OPTS="-Djava.awt.headless=true --add-opens=java.desktop/javax.swing=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED"
 
 echo "========================================="
-echo "Building confocal-lens installer"
+echo "Building lens-correct installer"
 echo "========================================="
 
 # Clean previous builds

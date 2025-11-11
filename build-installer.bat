@@ -1,5 +1,5 @@
 @echo off
-REM Build native installer for confocal-lens CLI tool
+REM Build native installer for lens-correct CLI tool
 REM Usage: build-installer.bat [platform]
 REM   platform: linux, windows, osx (optional, defaults to current platform)
 
@@ -9,7 +9,7 @@ set PLATFORM=%1
 set MVN_OPTS=-Djava.awt.headless=true --add-opens=java.desktop/javax.swing=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED
 
 echo =========================================
-echo Building confocal-lens installer
+echo Building lens-correct installer
 echo =========================================
 
 REM Clean previous builds

@@ -17,14 +17,85 @@
 		</repository>
 	</repositories>
 
-	<artifactId>confocal-lens</artifactId>
+	<artifactId>lens-correct</artifactId>
 	<groupId>org.janelia.saalfeldlab</groupId>
 	<version>0.0.1-SNAPSHOT</version>
 
-	<description>CLI tool for confocal lens correction</description>
+	<description>Tools for calibrating and applying lens correction models to multi-channel and split-image microscopy data from light and electron sources</description>
+	<name>Lens Correction Tools</name>
+	<url>https://github.com/saalfeldlab/lens-correct</url>
+	<inceptionYear>2023</inceptionYear>
+
+	<organization>
+		<name>Janelia Research Campus</name>
+		<url>https://www.janelia.org/</url>
+	</organization>
+
+	<licenses>
+		<license>
+			<name>GNU General Public License v3.0</name>
+			<url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>saalfeld</id>
+			<name>Stephan Saalfeld</name>
+			<email>saalfelds@janelia.hhmi.org</email>
+			<organization>Janelia Research Campus</organization>
+			<organizationUrl>https://www.janelia.org/</organizationUrl>
+			<roles>
+				<role>lead</role>
+				<role>developer</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>kawase</id>
+			<name>Takashi Kawase</name>
+			<organization>Janelia Research Campus</organization>
+			<organizationUrl>https://www.janelia.org/</organizationUrl>
+			<roles>
+				<role>developer</role>
+			</roles>
+		</developer>
+	</developers>
+
+	<contributors>
+		<contributor>
+			<name>Contributors</name>
+			<url>https://github.com/saalfeldlab/lens-correct/graphs/contributors</url>
+		</contributor>
+	</contributors>
+
+	<mailingLists>
+		<mailingList>
+			<name>ImageJ Forum</name>
+			<archive>https://forum.image.sc/</archive>
+		</mailingList>
+	</mailingLists>
+
+	<scm>
+		<connection>scm:git:git://github.com/saalfeldlab/lens-correct.git</connection>
+		<developerConnection>scm:git:git@github.com:saalfeldlab/lens-correct.git</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/saalfeldlab/lens-correct</url>
+	</scm>
+
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/saalfeldlab/lens-correct/issues</url>
+	</issueManagement>
+
+	<ciManagement>
+		<system>GitHub Actions</system>
+		<url>https://github.com/saalfeldlab/lens-correct/actions</url>
+	</ciManagement>
 
 	<properties>
-		<package-name>org.janelia.saalfedlab.confocallens</package-name>
+		<package-name>org.janelia.saalfeldlab.lenscorrect</package-name>
 		<license.licenseName>gpl_v3</license.licenseName>
 		<license.copyrightOwners>Stephan Saalfeld and Takashi Kawasw.</license.copyrightOwners>
 
@@ -32,10 +103,10 @@
 		<maven.compiler.release>17</maven.compiler.release>
 
 		<!-- Main class for CLI -->
-		<main-class>org.janelia.saalfeldlab.confocallens.ConfocalLensCLI</main-class>
+		<main-class>org.janelia.saalfeldlab.lenscorrect.LensCorrectCLI</main-class>
 
 		<!-- App packaging properties -->
-		<app.name>confocal-lens</app.name>
+		<app.name>lens-correct</app.name>
 		<app.version>${project.version}</app.version>
 
 		<!-- NB: Deploy releases to the SciJava Maven repository. -->
@@ -43,8 +114,8 @@
 
 		<TrakEM2.version>2.0.1</TrakEM2.version>
 
-		<enforcer.skip>true</enforcer.skip>
-		<mpicbg.version>1.6.0</mpicbg.version>
+		<!-- <enforcer.skip>true</enforcer.skip> -->
+		<mpicbg.version>1.6.6</mpicbg.version>
 	</properties>
 
 	<dependencies>
