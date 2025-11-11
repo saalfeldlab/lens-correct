@@ -1,0 +1,19 @@
+#!/bin/bash
+# Post-installation script for lens-correct
+# Creates symlink in /usr/local/bin for command-line access
+
+# Create /usr/local/bin if it doesn't exist
+mkdir -p /usr/local/bin
+
+# Remove old symlink if it exists
+rm -f /usr/local/bin/lens-correct
+
+# Create new symlink
+ln -s "/Applications/lens-correct.app/Contents/MacOS/lens-correct" "/usr/local/bin/lens-correct"
+
+# Optional: Create uninstaller symlink (uncomment if uninstaller is included in app bundle)
+# ln -s "/Applications/lens-correct.app/Contents/Resources/uninstall.sh" "/usr/local/bin/lens-correct-uninstall"
+
+echo "lens-correct has been installed. You can now use 'lens-correct' from the terminal."
+
+exit 0

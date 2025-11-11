@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-		http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
 		<groupId>org.scijava</groupId>
 		<artifactId>pom-scijava</artifactId>
-		<version>31.0.0</version>
-		<relativePath />
+		<version>43.0.0</version>
 	</parent>
 	<repositories>
 		<!-- NB: for project parent -->
@@ -18,94 +17,139 @@
 		</repository>
 	</repositories>
 
-	<artifactId>confocal-lens</artifactId>
+	<artifactId>lens-correct</artifactId>
+	<groupId>org.janelia.saalfeldlab</groupId>
+	<version>0.0.1-SNAPSHOT</version>
 
-	<description>Calculate lens-distortion from confocal stacks</description>
+	<description>Tools for calibrating and applying lens correction models to multi-channel and split-image microscopy data from light and electron sources</description>
+	<name>Lens Correction Tools</name>
+	<url>https://github.com/saalfeldlab/lens-correct</url>
+	<inceptionYear>2023</inceptionYear>
+
+	<organization>
+		<name>Janelia Research Campus</name>
+		<url>https://www.janelia.org/</url>
+	</organization>
+
+	<licenses>
+		<license>
+			<name>GNU General Public License v3.0</name>
+			<url>https://www.gnu.org/licenses/gpl-3.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<id>saalfeld</id>
+			<name>Stephan Saalfeld</name>
+			<email>saalfelds@janelia.hhmi.org</email>
+			<organization>Janelia Research Campus</organization>
+			<organizationUrl>https://www.janelia.org/</organizationUrl>
+			<roles>
+				<role>lead</role>
+				<role>developer</role>
+				<role>maintainer</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>kawase</id>
+			<name>Takashi Kawase</name>
+			<organization>Janelia Research Campus</organization>
+			<organizationUrl>https://www.janelia.org/</organizationUrl>
+			<roles>
+				<role>developer</role>
+			</roles>
+		</developer>
+	</developers>
+
+	<contributors>
+		<contributor>
+			<name>Contributors</name>
+			<url>https://github.com/saalfeldlab/lens-correct/graphs/contributors</url>
+		</contributor>
+	</contributors>
+
+	<mailingLists>
+		<mailingList>
+			<name>ImageJ Forum</name>
+			<archive>https://forum.image.sc/</archive>
+		</mailingList>
+	</mailingLists>
+
+	<scm>
+		<connection>scm:git:git://github.com/saalfeldlab/lens-correct.git</connection>
+		<developerConnection>scm:git:git@github.com:saalfeldlab/lens-correct.git</developerConnection>
+		<tag>HEAD</tag>
+		<url>https://github.com/saalfeldlab/lens-correct</url>
+	</scm>
+
+	<issueManagement>
+		<system>GitHub Issues</system>
+		<url>https://github.com/saalfeldlab/lens-correct/issues</url>
+	</issueManagement>
+
+	<ciManagement>
+		<system>GitHub Actions</system>
+		<url>https://github.com/saalfeldlab/lens-correct/actions</url>
+	</ciManagement>
+
+	<properties>
+		<package-name>org.janelia.saalfeldlab.lenscorrect</package-name>
+		<license.licenseName>gpl_v3</license.licenseName>
+		<license.copyrightOwners>Stephan Saalfeld and Takashi Kawasw.</license.copyrightOwners>
+
+		<!-- Java version -->
+		<maven.compiler.release>17</maven.compiler.release>
+
+		<!-- Main class for CLI -->
+		<main-class>org.janelia.saalfeldlab.lenscorrect.LensCorrectCLI</main-class>
+
+		<!-- App packaging properties -->
+		<app.name>lens-correct</app.name>
+		<app.version>${project.version}</app.version>
+
+		<!-- NB: Deploy releases to the SciJava Maven repository. -->
+		<releaseProfiles>sign,deploy-to-scijava</releaseProfiles>
+
+		<TrakEM2.version>2.0.1</TrakEM2.version>
+
+		<!-- <enforcer.skip>true</enforcer.skip> -->
+		<mpicbg.version>1.6.6</mpicbg.version>
+	</properties>
 
 	<dependencies>
-		<!-- ImageJ dependencies -->
 		<dependency>
-			<groupId>net.imagej</groupId>
-			<artifactId>ij</artifactId>
-		</dependency>
-
-		<!-- Third party dependencies -->
-		<dependency>
-    		<groupId>com.google.code.gson</groupId>
-    		<artifactId>gson</artifactId>
-    		</dependency>
-		
-		<dependency>
-    		<groupId>commons-cli</groupId>
-    		<artifactId>commons-cli</artifactId>
-    		<version>1.5.0</version>
-		</dependency>
-		
-		<dependency>
-    		<groupId>com.googlecode.json-simple</groupId>
-    		<artifactId>json-simple</artifactId>
-    		<version>1.1.1</version>
-		</dependency>
-		
-		<dependency>
-			<groupId>mpicbg</groupId>
-			<artifactId>mpicbg</artifactId>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>mpicbg</groupId>
-			<artifactId>mpicbg_</artifactId>
+			<groupId>commons-cli</groupId>
+			<artifactId>commons-cli</artifactId>
 		</dependency>
-		
-		<dependency>
-    		<groupId>sc.fiji</groupId>
-    		<artifactId>TrakEM2_</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.4</version>
-		</dependency>
-
 		<dependency>
 			<groupId>commons-collections</groupId>
 			<artifactId>commons-collections</artifactId>
-			<version>3.2.2</version>
 		</dependency>
-
 		<dependency>
-			<groupId>net.imglib2</groupId>
-			<artifactId>imglib2</artifactId>
+			<groupId>sc.fiji</groupId>
+			<artifactId>TrakEM2_</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>mpicbg</groupId>
+			<artifactId>mpicbg</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>net.imglib2</groupId>
 			<artifactId>imglib2-ij</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>net.imglib2</groupId>
-			<artifactId>imglib2-realtransform</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>sc.fiji</groupId>
 			<artifactId>LSM_Reader</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>sc.fiji</groupId>
-			<artifactId>mpicbg-trakem2</artifactId>
-			<version>1.2.2</version>
-		</dependency>
-		<dependency>
-			<groupId>cisd</groupId>
-			<artifactId>jhdf5</artifactId>
-			<version>14.12.5</version>
-		</dependency>
-		<dependency>
 			<groupId>ome</groupId>
 			<artifactId>bio-formats_plugins</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>ome</groupId>
-			<artifactId>formats-api</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>ome</groupId>
@@ -115,20 +159,295 @@
 			<groupId>ome</groupId>
 			<artifactId>formats-bsd</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>info.picocli</groupId>
+			<artifactId>picocli</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
-	<groupId>org.janelia.saalfeldlab</groupId>
-	<version>0.0.1-SNAPSHOT</version>
 
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
+				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
-					<source>1.8</source>
-					<target>1.8</target>
+					<argLine>
+						-Djava.awt.headless=true
+						--add-opens=java.desktop/javax.swing=ALL-UNNAMED
+						--add-opens=java.base/java.lang=ALL-UNNAMED
+						--add-opens=java.base/java.io=ALL-UNNAMED
+					</argLine>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>exec-maven-plugin</artifactId>
+				<version>3.1.0</version>
+				<configuration>
+					<mainClass>${main-class}</mainClass>
+					<commandlineArgs>
+						-Djava.awt.headless=true
+						--add-opens=java.desktop/javax.swing=ALL-UNNAMED
+						--add-opens=java.base/java.lang=ALL-UNNAMED
+						--add-opens=java.io/java.lang=ALL-UNNAMED
+					</commandlineArgs>
+				</configuration>
+			</plugin>
+			<!-- Create executable JAR with dependencies -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.6.0</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<archive>
+						<manifest>
+							<mainClass>${main-class}</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Copy dependencies for jpackage -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<version>3.6.0</version>
+				<executions>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/dependency</outputDirectory>
+							<includeScope>runtime</includeScope>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Parse version to create macOS-compatible version string -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.4.0</version>
+				<executions>
+					<execution>
+						<id>parse-version</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>parse-version</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- OS detection for platform-specific packaging -->
+			<plugin>
+				<groupId>kr.motd.maven</groupId>
+				<artifactId>os-maven-plugin</artifactId>
+				<version>1.7.1</version>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>detect</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Copy and filter platform-specific packaging resources -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>3.3.1</version>
+				<executions>
+					<execution>
+						<id>copy-packaging-resources</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/packaging</outputDirectory>
+							<resources>
+								<resource>
+									<directory>src/packaging</directory>
+									<filtering>true</filtering>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- Clean jvm-image directory before jlink -->
+			<plugin>
+				<artifactId>maven-clean-plugin</artifactId>
+				<version>3.4.1</version>
+				<executions>
+					<execution>
+						<id>clean-jvm-image</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>clean</goal>
+						</goals>
+						<configuration>
+							<excludeDefaultDirectories>true</excludeDefaultDirectories>
+							<filesets>
+								<fileset>
+									<directory>${project.build.directory}/jvm-image</directory>
+								</fileset>
+							</filesets>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<!-- jlink and jpackage for creating installers -->
+			<plugin>
+				<groupId>io.github.wiverson</groupId>
+				<artifactId>jtoolprovider-plugin</artifactId>
+				<version>1.0.34</version>
+				<executions>
+					<!-- Create custom JVM with jlink -->
+					<execution>
+						<id>jlink</id>
+						<phase>package</phase>
+						<goals>
+							<goal>java-tool</goal>
+						</goals>
+						<configuration>
+							<toolName>jlink</toolName>
+							<args>
+								<arg>--module-path</arg>
+								<arg>${java.home}/jmods</arg>
+								<arg>--add-modules</arg>
+								<arg>java.base,java.desktop,java.logging,java.management,java.naming,java.net.http,java.prefs,java.scripting,java.sql,java.xml,jdk.unsupported,jdk.crypto.ec</arg>
+								<arg>--output</arg>
+								<arg>${project.build.directory}/jvm-image</arg>
+								<arg>--strip-debug</arg>
+								<arg>--compress</arg>
+								<arg>2</arg>
+								<arg>--no-header-files</arg>
+								<arg>--no-man-pages</arg>
+							</args>
+						</configuration>
+					</execution>
+					<!-- Create platform-specific installer with jpackage -->
+					<execution>
+						<id>jpackage</id>
+						<phase>install</phase>
+						<goals>
+							<goal>java-tool</goal>
+						</goals>
+						<configuration>
+							<toolName>jpackage</toolName>
+							<args>
+								<arg>@${project.build.directory}/packaging/${os.detected.name}/jpackage.txt</arg>
+							</args>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
+
+	<!-- Platform-specific profiles -->
+	<profiles>
+		<!-- Linux profile -->
+		<profile>
+			<id>linux</id>
+			<activation>
+				<os>
+					<family>unix</family>
+					<name>linux</name>
+				</os>
+			</activation>
+		</profile>
+
+		<!-- Windows profile -->
+		<profile>
+			<id>windows</id>
+			<activation>
+				<os>
+					<family>windows</family>
+				</os>
+			</activation>
+		</profile>
+
+		<!-- macOS Intel profile -->
+		<profile>
+			<id>osx-x86_64</id>
+			<activation>
+				<os>
+					<family>mac</family>
+					<arch>x86_64</arch>
+				</os>
+			</activation>
+			<properties>
+				<!-- macOS requires version as X.X.X format, no SNAPSHOT suffix, and major version cannot be 0 -->
+				<!-- Hardcoded to 1 since macOS rejects 0.x.x versions -->
+				<!-- Original would be: ${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion} -->
+				<app.version.macos>1</app.version.macos>
+			</properties>
+		</profile>
+
+		<!-- macOS ARM/Silicon profile -->
+		<profile>
+			<id>osx-aarch64</id>
+			<activation>
+				<os>
+					<family>mac</family>
+					<arch>aarch64</arch>
+				</os>
+			</activation>
+			<properties>
+				<!-- macOS requires version as X.X.X format, no SNAPSHOT suffix, and major version cannot be 0 -->
+				<!-- Hardcoded to 1 since macOS rejects 0.x.x versions -->
+				<!-- Original would be: ${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion} -->
+				<app.version.macos>1</app.version.macos>
+			</properties>
+		</profile>
+
+		<!-- Cross-platform build profile for CI/CD -->
+		<profile>
+			<id>cross-platform</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>io.github.wiverson</groupId>
+						<artifactId>jtoolprovider-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>jpackage-linux</id>
+								<phase>install</phase>
+								<goals>
+									<goal>java-tool</goal>
+								</goals>
+								<configuration>
+									<toolName>jpackage</toolName>
+									<argsFile>${project.build.directory}/packaging/linux/jpackage.txt</argsFile>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>

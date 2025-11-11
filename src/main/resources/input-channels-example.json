@@ -1,0 +1,13 @@
+{
+    "patterns" : [
+        "AF488_?AF594",
+        "AF488_?cy3_?AF647"
+    ],
+    "labels" : [
+        "488nm, pass1",
+        "594nm",
+        "488nm, pass2",
+        "561nm",
+        "647nm"
+    ]
+}

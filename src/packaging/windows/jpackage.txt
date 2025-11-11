@@ -1,0 +1,21 @@
+--verbose
+--name "${app.name}"
+--app-version ${app.version}
+--type msi
+--dest "${project.build.directory}/installer-${os.detected.name}"
+--main-class ${main-class}
+--main-jar ${project.build.finalName}-jar-with-dependencies.jar
+--input "${project.build.directory}/jars"
+--runtime-image "${project.build.directory}/jvm-image"
+--temp "%TEMP%/lens-correct-installer-${project.version}"
+--resource-dir "${project.build.directory}/packaging/windows"
+--java-options "-Djava.awt.headless=true"
+--java-options "--add-opens=java.desktop/javax.swing=ALL-UNNAMED"
+--java-options "--add-opens=java.base/java.lang=ALL-UNNAMED"
+--java-options "--add-opens=java.base/java.io=ALL-UNNAMED"
+--vendor "Janelia Saalfeld Lab"
+--description "${project.description}"
+--copyright "GPL v3"
+--win-upgrade-uuid "a8b4c5d2-1234-5678-90ab-cdef12345678"
+--win-menu
+--win-shortcut

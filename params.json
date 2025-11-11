@@ -1,8 +1,14 @@
 {
+    "input" : {
+        "patterns" : [
+            "AF488_?AF594",
+            "AF488_?cy3_?AF647"
+        ]
+    },
     "montageLayers" : {
         "initialSigma" : 1.6,
         "steps" : 3,
-        "minOctaveSize" : 900,
+        "minOctaveSize" : 600,
         "maxOctaveSize" : 1200,
         "fdSize" : 4,
         "fdBins" : 8,
@@ -25,8 +31,8 @@
         "SIFTfdBins" : 8,
         "SIFTfdSize" : 4,
         "SIFTinitialSigma" : 1.6,
-        "SIFTmaxOctaveSize" : 900,
-        "SIFTminOctaveSize" : 1200,
+        "SIFTminOctaveSize" : 600,
+        "SIFTmaxOctaveSize" : 1200,
         "SIFTsteps" : 3,
         "clearCache" : true,
         "rod" : 0.92,
@@ -45,12 +51,12 @@
         "widestSetOnly" : false,
         "regularize" : false,
         "regularizerIndex" : 1,
-        "rejectIdentity" : false,
+        "rejectIdentity" : false
     },
     "correctDistortion" : {
         "initialSigma" : 1.6,
         "steps" : 3,
-        "minOctaveSize" : 900,
+        "minOctaveSize" : 600,
         "maxOctaveSize" : 1200,
         "fdSize" : 4,
         "fdBins" : 8,
@@ -79,8 +85,8 @@
         "SIFTfdBins" : 8,
         "SIFTfdSize" : 4,
         "SIFTinitialSigma" : 1.6,
+        "SIFTminOctaveSize" : 600,
         "SIFTmaxOctaveSize" : 1200,
-        "SIFTminOctaveSize" : 900,
         "SIFTsteps" : 3,
         "clearCache" : true,
         "rod" : 0.92,
@@ -99,14 +105,14 @@
         "widestSetOnly" : false,
         "regularize" : true,
         "regularizerIndex" : 0,
-        "rejectIdentity" : false,
+        "rejectIdentity" : false
     },
     "alignLayers3" : {
         "SIFTfdBins" : 8,
         "SIFTfdSize" : 4,
         "SIFTinitialSigma" : 1.6,
+        "SIFTminOctaveSize" : 600,
         "SIFTmaxOctaveSize" : 1200,
-        "SIFTminOctaveSize" : 900,
         "SIFTsteps" : 3,
         "clearCache" : true,
         "rod" : 0.92,
@@ -125,6 +131,6 @@
         "widestSetOnly" : false,
         "regularize" : true,
         "regularizerIndex" : 0,
-        "rejectIdentity" : false,
+        "rejectIdentity" : false
     }
 }

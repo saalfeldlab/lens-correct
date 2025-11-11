@@ -1,0 +1,13 @@
+{
+    "patterns" : [
+        "X_-.*\\.tif"
+    ],
+    "masks" : [
+        "mask-left.tif",
+        "mask-right.tif"
+    ],
+    "labels" : [
+        "left",
+        "right"
+    ]
+}

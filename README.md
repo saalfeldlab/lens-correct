@@ -1,29 +1,39 @@
-# confocal-lens
-This repository contains some Java classes and scripts to calculate lens-distortion models including chromatic abberation from confocal stacks and how to apply them.
+# LensCorrect
 
-If you are using this tool in your work, please do not forget to cite [our paper](https://www.biorxiv.org/content/10.1101/376384v1) where we first introduce this method:
+Tools for calibrating and applying lens correction models to multi-channel and split-image microscopy data from light and electron microscopy. This is useful to calculate lens-distortion models for distortion free stitching and/ or chromatic abberation.
 
-JA Bogovic, H Otsuna, L Heinrich, M Ito, J Jeter, GW Meissner, A Nern, J Colonell, O Malkesman, K Ito, S Saalfeld, "An unbiased template of the Drosophila brain and ventral nerve cord", bioRxiv 376384, DOI: [10.1101/376384](https://doi.org/10.1101/376384).
+There are four CLI sub commands:
 
-# Multi-color lens distortion and shift correction
-Please follow the instructions in this [screencast](https://www.youtube.com/watch?v=lPt-WQuniUs).  The approach is equivalent to what we have done for multi-camera calibration across electron microscopes.
+```bash
+Usage: lens-correct [-hV] [COMMAND]
+Calculate and apply lens-distortion corrections from and to multi-channel and
+split-image microscopy stacks.
+  -h, --help      Show this help message and exit.
+  -V, --version   Print version information and exit.
+Commands:
+  help                Display help information about the specified command.
+  calibrate-split     Calibrate lens distortion and align split-images or lens
+                        arrays
+  apply-split         Apply lens-distortion correction and alignment to stacks
+                        of split-images or lens arrays
+  apply-channels      Apply wavelength-dependent lens-distortion correction and
+                        alignment to multi-channel image stacks
+  calibrate-channels  Calibrate lens distortion and align multi-channel image
+                        stacks
+```
 
-# Apply distortion models
+## Split calibration
 
-This is an example for the example models included in this repository.  Please modify these models and the scripts according to your specific needs.
+Documented [here](doc/SPLIT.md).
 
-Download the [json files](https://github.com/saalfeldlab/confocal-lens/tree/master/scripts) (multi-channel lens-models for all scopes) and drop the file [apply-lens.bsh](https://github.com/saalfeldlab/confocal-lens/blob/master/scripts/apply-lens.bsh) into the plugin directory of your Fiji installation.  After a restart of Fiji, you should find a menu-entry for this script in the plugins menu.  Click it.
+## Multi-channel calibration
 
-If your Fiji is not too old, then it should open a dialog that asks you
-for two input image paths (expected is
+Explained [here](https://www.youtube.com/watch?v=lPt-WQuniUs), follow the [split instructions](doc/SPLIT.md).
 
-1. LSM file with two channels (488 and 594nm)
-2. LSM file with three channels (488, 561, and 647nm)
+## Installation
 
-), the respective JSON file for the scope that was used, and an output directory to save the resulting multi-channel file.  The output will have all five channels in a single file.
+Documented [here](doc/INSTALL.md).
 
-The script currently assumes that the lens-models in the JSON file and the channels from input images are in the same order (in this case 488, 594, 488, 561, 647nm).  You can do subsets or other combinations but you would have to edit the JSON file accordingly.  The JSON files are simple to read, check
+## References
 
-https://github.com/saalfeldlab/confocal-lens/blob/master/scripts/scope1.json
-
-and they contain name tags for each model.  That should make editing them easier.  The script ignores the name tags and goes by the order only.  The script should be macro-recordable.
+This method is an extension of the method developed for lens-distortion and chromatic aberration correction by [Bogovic et al. (2020). PLOS ONE 15(12): e0236495](https://doi.org/10.1371/journal.pone.0236495) which is an extension of the method developed for lens-distortion corrections and alignment across uncalibrated TEM systems by [Zheng et al. (2018). Cell 174(3):730-743.e22](https://doi.org/10.1016/j.cell.2018.06.019) which is an extension of the method developed for lens-distortion correction of TEM images by [Kaynig et al. (2010). J Struct Biol. 171(2):163-73](https://doi.org/10.1016/j.jsb.2010.04.012) and implemented in [TrakEM2](https://imagej.net/plugins/trakem2/) by [Cardona et al. (2012). PLoS ONE 7(6), e38011](https://doi.org/10.1371/journal.pone.0038011).
