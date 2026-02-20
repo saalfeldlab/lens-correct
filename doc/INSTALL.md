@@ -14,7 +14,7 @@
 ./build-installer.sh
 ```
 
-Creates `target/installer-linux/lens-correct_0.0.1-SNAPSHOT-1_amd64.deb` or `target/installer-osx/lens-correct-1.pkg`, respectively.
+Creates `target/installer-linux/lens-correct_0.0.1-1_amd64.deb` or `target/installer-osx/lens-correct-1.pkg`, respectively.
 
 ## Installation
 
@@ -23,7 +23,7 @@ Creates `target/installer-linux/lens-correct_0.0.1-SNAPSHOT-1_amd64.deb` or `tar
 Install
 
 ```bash
-sudo apt install target/installer-linux/lens-correct_0.0.1-SNAPSHOT-1_amd64.deb
+sudo apt install target/installer-linux/lens-correct_0.0.1-1_amd64.deb
 ```
 
 The tool is installed to `/opt/lens-correct/` and symlinked to `/usr/local/bin/lens-correct`. Run it:
