@@ -19,7 +19,7 @@
 
 	<artifactId>lens-correct</artifactId>
 	<groupId>org.janelia.saalfeldlab</groupId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
 
 	<description>Tools for calibrating and applying lens correction models to multi-channel and split-image microscopy data from light and electron sources</description>
 	<name>Lens Correction Tools</name>
