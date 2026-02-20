@@ -23,9 +23,6 @@ jobs:
           - os: windows-latest
             platform: windows
             artifact: target/installer-windows/*.msi
-          - os: macos-13
-            platform: osx
-            artifact: target/installer-osx/*.pkg
           - os: macos-latest
             platform: osx
             artifact: target/installer-osx/*.pkg
