@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (without v prefix, e.g. 1.0.0)'
+        required: true
+
+jobs:
+  build:
+    name: Build installer (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact: target/installer-linux/*.deb
+          - os: windows-latest
+            platform: windows
+            artifact: target/installer-windows/*.msi
+          - os: macos-13
+            platform: osx
+            artifact: target/installer-osx/*.pkg
+          - os: macos-latest
+            platform: osx
+            artifact: target/installer-osx/*.pkg
+
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Set version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          mvn --batch-mode versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
+
+      - name: Build installer
+        shell: bash
+        env:
+          MAVEN_OPTS: >-
+            -Djava.awt.headless=true
+            --add-opens=java.desktop/javax.swing=ALL-UNNAMED
+            --add-opens=java.base/java.lang=ALL-UNNAMED
+            --add-opens=java.base/java.io=ALL-UNNAMED
+            -Xmx4g
+        run: ./build-installer.sh ${{ matrix.platform }}
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push'
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: ${{ matrix.artifact }}
