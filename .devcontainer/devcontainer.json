@@ -18,7 +18,10 @@
         "eamodio.gitlens",
         "ms-toolsai.jupyter-renderers",
         "ms-toolsai.jupyter",
-        "ms-toolsai.jupyter-keymap"
+        "ms-toolsai.jupyter-keymap",
+        "vscjava.vscode-java-pack",
+        "ms-vscode-remote.remote-containers",
+        "Anthropic.claude-code"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -43,8 +46,7 @@
   "remoteUser": "node",
   "mounts": [
     "source=claude-code-bashhistory-${devcontainerId},target=/commandhistory,type=volume",
-    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume",
-    "source=/groups/saalfeld/saalfeldlab/projects/shroff/lens-correction,target=/groups/saalfeld/saalfeldlab/projects/shroff/lens-correction,type=bind,consistency=cached"
+    "source=claude-code-config-${devcontainerId},target=/home/node/.claude,type=volume"
   ],
   "containerEnv": {
     "NODE_OPTIONS": "--max-old-space-size=4096",
