@@ -32,7 +32,7 @@ Explained [here](https://www.youtube.com/watch?v=lPt-WQuniUs), follow the [split
 
 ## Installation
 
-Documented [here](doc/INSTALL.md).
+Use the [released installation package for your OS](https://github.com/saalfeldlab/lens-correct/releases) or [build it yourself](doc/INSTALL.md).
 
 ## References
 
